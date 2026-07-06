@@ -1,0 +1,13 @@
+Backend/email-writer-s/src/main/resources/application.properties
+Backend/email-writer-s/target/
+Backend/email-writer-s/.idea/
+Backend/email-writer-s/*.iml
+frontend/**/node_modules/
+frontend/**/dist/
+.DS_Store
+Thumbs.db
+
+spring.application.name=email-writer-s
+
+groq.api.url=https://api.groq.com/openai/v1/chat/completions
+groq.api.key=your_groq_api_key_here
