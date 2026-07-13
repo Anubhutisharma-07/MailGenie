@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="popup.css">
+  <title>MailGenie Settings</title>
+</head>
+<body>
+  <div class="popup-container">
+    <header class="header">
+      <span class="logo">💌</span>
+      <h1 class="title">MailGenie</h1>
+      <span class="subtitle">AI Extension Settings</span>
+    </header>
+
+    <main class="form-container">
+      <div class="form-group">
+        <label for="backendUrl">Backend API URL</label>
+        <input type="text" id="backendUrl" placeholder="http://localhost:8080" />
+      </div>
+
+      <div class="form-group">
+        <label for="provider">Default AI Provider</label>
+        <select id="provider">
+          <option value="groq">⚡ Groq LPU</option>
+          <option value="openai">🧠 OpenAI GPT</option>
+          <option value="gemini">♊ Google Gemini</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="defaultTone">Default Tone</label>
+        <select id="defaultTone">
+          <option value="">Default Tone</option>
+          <option value="professional">👔 Professional</option>
+          <option value="casual">☕ Casual</option>
+          <option value="friendly">😊 Friendly</option>
+          <option value="persuasive">🎯 Persuasive</option>
+          <option value="urgent">⏰ Urgent</option>
+          <option value="empathetic">❤️ Empathetic</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="defaultLanguage">Default Language</label>
+        <select id="defaultLanguage">
+          <option value="English">English 🇺🇸</option>
+          <option value="Spanish">Spanish 🇪🇸</option>
+          <option value="French">French 🇫🇷</option>
+          <option value="German">German 🇩🇪</option>
+          <option value="Italian">Italian 🇮🇹</option>
+          <option value="Japanese">Japanese 🇯🇵</option>
+          <option value="Chinese">Chinese 🇨🇳</option>
+          <option value="Hindi">Hindi 🇮🇳</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="customModel">Custom Model Name (Optional)</label>
+        <input type="text" id="customModel" placeholder="e.g. gpt-4o-mini" />
+      </div>
+
+      <button id="saveBtn" class="btn">Save Configuration</button>
+      
+      <div id="status" class="status-msg hide">
+        Configuration saved successfully!
+      </div>
+    </main>
+
+    <footer class="footer">
+      <span>MailGenie Server Status: </span>
+      <span id="serverStatus" class="status-indicator">Checking...</span>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

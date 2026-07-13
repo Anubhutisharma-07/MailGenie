@@ -1,0 +1,80 @@
+/* Injected MailGenie Elements inside Gmail Compose Toolbar */
+
+.mailgenie-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 8px;
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  padding: 3px 6px;
+  border-radius: 20px;
+  font-family: 'Google Sans', Roboto, RobotoDraft, Helvetica, Arial, sans-serif;
+  transition: all 0.2s ease;
+}
+
+.mailgenie-wrapper:hover {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+/* AI Generate Button */
+.mailgenie-btn {
+  background-color: #6366f1 !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 16px !important;
+  padding: 0 14px !important;
+  height: 28px !important;
+  line-height: 28px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.mailgenie-btn:hover {
+  background-color: #4f46e5 !important;
+  box-shadow: 0 2px 5px rgba(99, 102, 241, 0.3) !important;
+}
+
+.mailgenie-btn:disabled {
+  background-color: #a5b4fc !important;
+  cursor: not-allowed !important;
+}
+
+/* Select Dropdowns */
+.mailgenie-select {
+  background-color: transparent !important;
+  color: #1f2937 !important;
+  border: 1px solid rgba(0, 0, 0, 0.15) !important;
+  border-radius: 12px !important;
+  padding: 0 6px !important;
+  height: 24px !important;
+  font-size: 12px !important;
+  outline: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  max-width: 100px;
+}
+
+/* Dark mode fallback for selects inside Gmail if user uses Gmail Dark Theme */
+@media (prefers-color-scheme: dark) {
+  .mailgenie-select {
+    color: #e5e7eb !important;
+    background-color: #1f2937 !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+  }
+  .mailgenie-select option {
+    background-color: #1f2937 !important;
+    color: #e5e7eb !important;
+  }
+}
+
+.mailgenie-select:hover {
+  border-color: rgba(99, 102, 241, 0.5) !important;
+}

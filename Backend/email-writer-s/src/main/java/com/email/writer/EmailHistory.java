@@ -30,6 +30,10 @@ public class EmailHistory {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String generatedReply;
 
+    private String provider;
+
+    private String language;
+
     @Column(columnDefinition = "TEXT")
     private String userComment;
 
