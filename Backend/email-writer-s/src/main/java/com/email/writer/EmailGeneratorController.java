@@ -12,10 +12,25 @@ import org.springframework.web.bind.annotation.*;
 public class EmailGeneratorController {
 
     private final EmailGeneratorService emailGeneratorService;
+    private final EmailHistoryService emailHistoryService;
 
     @PostMapping("/generate")
     public ResponseEntity<String> generateEmail(@RequestBody EmailRequest emailRequest){
         String response = emailGeneratorService.generateEmailReply(emailRequest);
+        
+        // Auto-save generated email to history if it doesn't indicate an error
+        if (response != null && !response.startsWith("Error:") && 
+            !response.startsWith("Groq API error") && 
+            !response.startsWith("Unexpected error")) {
+            
+            EmailHistory history = EmailHistory.builder()
+                    .originalContent(emailRequest.getEmailContent())
+                    .tone(emailRequest.getTone())
+                    .generatedReply(response)
+                    .build();
+            emailHistoryService.saveHistory(history);
+        }
+        
         return ResponseEntity.ok(response);
     }
 
