@@ -5,11 +5,11 @@
   --font-family-body: 'Inter', sans-serif;
 
   /* Light Theme Colors */
-  --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  --bg-gradient: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
   --card-bg: rgba(255, 255, 255, 0.85);
   --card-border: rgba(255, 255, 255, 0.4);
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
   --primary-glow: rgba(99, 102, 241, 0.15);
   --accent-color: #6366f1;
   --accent-hover: #4f46e5;
@@ -18,12 +18,12 @@
 
 [data-theme='dark'] {
   /* Dark Theme Colors */
-  --bg-gradient: radial-gradient(circle at top right, #0f172a, #020617);
-  --card-bg: rgba(30, 41, 59, 0.7);
-  --card-border: rgba(255, 255, 255, 0.08);
+  --bg-gradient: radial-gradient(circle at top right, #090d16, #02060c);
+  --card-bg: rgba(17, 24, 39, 0.6);
+  --card-border: rgba(255, 255, 255, 0.06);
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
-  --primary-glow: rgba(99, 102, 241, 0.3);
+  --primary-glow: rgba(99, 102, 241, 0.35);
   --accent-color: #818cf8;
   --accent-hover: #6366f1;
   --success-color: #34d399;
@@ -43,18 +43,18 @@ body {
 /* Glassmorphism Cards */
 .glass-card {
   background: var(--card-bg) !important;
-  backdrop-filter: blur(16px) saturate(120%);
-  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
   border: 1px solid var(--card-border) !important;
   border-radius: 20px !important;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.06) !important;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, border 0.3s ease !important;
 }
 
 .glass-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px 0 rgba(99, 102, 241, 0.15) !important;
-  border-color: rgba(99, 102, 241, 0.25) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px 0 rgba(99, 102, 241, 0.12) !important;
+  border-color: rgba(99, 102, 241, 0.2) !important;
 }
 
 /* Header & Title Design */
@@ -67,6 +67,29 @@ body {
   letter-spacing: -1px;
 }
 
+/* Sidebar Navigation Styling */
+.sidebar-item {
+  color: var(--text-secondary) !important;
+  opacity: 0.85;
+}
+
+.sidebar-item:hover {
+  background-color: rgba(99, 102, 241, 0.08) !important;
+  opacity: 1;
+}
+
+.sidebar-item-active {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.18) 0%, rgba(192, 132, 252, 0.18) 100%) !important;
+  color: var(--accent-color) !important;
+  border-left: 4px solid var(--accent-color);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.08);
+}
+
+.sidebar-item-active svg,
+.sidebar-item-active .MuiListItemIcon-root {
+  color: var(--accent-color) !important;
+}
+
 /* Gradient Buttons */
 .gradient-btn {
   background: linear-gradient(135deg, var(--accent-color) 0%, #c084fc 100%) !important;
@@ -75,18 +98,18 @@ body {
   font-weight: 600 !important;
   border-radius: 12px !important;
   text-transform: none !important;
-  box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.4) !important;
+  box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.3) !important;
   transition: all 0.3s ease !important;
 }
 
 .gradient-btn:hover:not(:disabled) {
-  transform: scale(1.02);
-  box-shadow: 0 6px 20px 0 rgba(99, 102, 241, 0.6) !important;
-  filter: brightness(1.1);
+  transform: scale(1.01);
+  box-shadow: 0 6px 20px 0 rgba(99, 102, 241, 0.4) !important;
+  filter: brightness(1.05);
 }
 
 .gradient-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   box-shadow: none !important;
 }
 
@@ -104,14 +127,14 @@ body {
 .history-card {
   border-radius: 16px !important;
   border: 1px solid var(--card-border) !important;
-  background: rgba(255, 255, 255, 0.03) !important;
+  background: var(--card-bg) !important;
+  backdrop-filter: blur(12px) saturate(120%);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .history-card:hover {
-  background: rgba(255, 255, 255, 0.05) !important;
-  border-color: rgba(99, 102, 241, 0.2) !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
+  border-color: rgba(99, 102, 241, 0.25) !important;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.04) !important;
 }
 
 /* Badges */
@@ -119,7 +142,7 @@ body {
   padding: 4px 10px;
   border-radius: 20px;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   display: inline-flex;
@@ -128,58 +151,64 @@ body {
 }
 
 .badge-groq {
-  background: rgba(245, 80, 54, 0.12);
+  background: rgba(245, 80, 54, 0.1);
   color: #f55036;
+  border: 1px solid rgba(245, 80, 54, 0.2);
 }
 
 .badge-openai {
-  background: rgba(16, 163, 127, 0.12);
+  background: rgba(16, 163, 127, 0.1);
   color: #10a37f;
+  border: 1px solid rgba(16, 163, 127, 0.2);
 }
 
 .badge-gemini {
-  background: rgba(26, 115, 232, 0.12);
+  background: rgba(26, 115, 232, 0.1);
   color: #1a73e8;
+  border: 1px solid rgba(26, 115, 232, 0.2);
 }
 
 .badge-claude {
-  background: rgba(217, 119, 6, 0.12);
+  background: rgba(217, 119, 6, 0.1);
   color: #d97706;
+  border: 1px solid rgba(217, 119, 6, 0.2);
 }
 
 .badge-tone {
   padding: 4px 10px;
   border-radius: 20px;
   font-size: 0.75rem;
-  background: rgba(99, 102, 241, 0.12);
+  background: rgba(99, 102, 241, 0.08);
   color: var(--accent-color);
-  font-weight: 600;
+  font-weight: 700;
+  border: 1px solid rgba(99, 102, 241, 0.15);
 }
 
 .badge-lang {
   padding: 4px 10px;
   border-radius: 20px;
   font-size: 0.75rem;
-  background: rgba(192, 132, 252, 0.12);
+  background: rgba(192, 132, 252, 0.08);
   color: #c084fc;
-  font-weight: 600;
+  font-weight: 700;
+  border: 1px solid rgba(192, 132, 252, 0.15);
 }
 
 /* Copy Animation */
 @keyframes pop-check {
   0% { transform: scale(0.8); opacity: 0; }
-  50% { transform: scale(1.2); }
+  50% { transform: scale(1.1); }
   100% { transform: scale(1); opacity: 1; }
 }
 
 .copy-success-icon {
-  animation: pop-check 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  animation: pop-check 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.1) forwards;
 }
 
 /* Scrollbar styling */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -188,7 +217,7 @@ body {
 
 ::-webkit-scrollbar-thumb {
   background: var(--text-secondary);
-  opacity: 0.3;
+  opacity: 0.2;
   border-radius: 10px;
 }
 
