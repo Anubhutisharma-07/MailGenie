@@ -6,6 +6,7 @@ function getSettings() {
         const defaults = {
             backendUrl: 'http://localhost:8080',
             provider: 'groq',
+            apiKey: '',
             defaultTone: 'professional',
             defaultLanguage: 'English',
             customModel: ''
@@ -248,7 +249,8 @@ async function injectButton() {
                         tone: selectedTone,
                         provider: settings.provider,
                         model: settings.customModel,
-                        language: selectedLanguage
+                        language: selectedLanguage,
+                        apiKey: settings.apiKey // Pass custom API key to override backend setting if supplied
                     })
                 });
 
