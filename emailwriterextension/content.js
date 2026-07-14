@@ -33,6 +33,30 @@ function getSettings() {
     });
 }
 
+// Dynamically check the background brightness of Gmail compose to detect dark mode
+function detectTheme(element) {
+    try {
+        let current = element;
+        while (current && current !== document.body) {
+            const bg = window.getComputedStyle(current).backgroundColor;
+            if (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)') {
+                const rgb = bg.match(/\d+/g);
+                if (rgb && rgb.length >= 3) {
+                    const r = parseInt(rgb[0]);
+                    const g = parseInt(rgb[1]);
+                    const b = parseInt(rgb[2]);
+                    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+                    return brightness < 128 ? 'dark' : 'light';
+                }
+            }
+            current = current.parentElement;
+        }
+    } catch (e) {
+        console.warn("MailGenie: Failed to detect theme", e);
+    }
+    return 'light';
+}
+
 function createAIButton() {
     const button = document.createElement('button');
     button.className = 'mailgenie-btn';
@@ -110,7 +134,6 @@ function getEmailContent(composeContainer) {
     ];
 
     if (composeContainer) {
-        // Look in parent/ancestor nodes or siblings
         const threadContainer = composeContainer.closest('.g3') || composeContainer.closest('.dw');
         if (threadContainer) {
             for (const selector of selectors) {
@@ -183,6 +206,12 @@ async function injectButton() {
         // Create wrapper container
         const wrapper = document.createElement('div');
         wrapper.className = 'mailgenie-wrapper';
+
+        // Detect theme and apply appropriate styles
+        const theme = detectTheme(toolbar);
+        if (theme === 'dark') {
+            wrapper.classList.add('mailgenie-dark');
+        }
 
         const button = createAIButton();
         const toneSelect = createToneSelect(settings.defaultTone);
