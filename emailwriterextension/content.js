@@ -1,17 +1,35 @@
 console.log("MailGenie Extension - Content Script Loaded");
 
-// Load stored configurations with defaults
+// Load stored configurations with defaults, safely checking for API availability
 function getSettings() {
     return new Promise((resolve) => {
-        chrome.storage.local.get({
+        const defaults = {
             backendUrl: 'http://localhost:8080',
             provider: 'groq',
             defaultTone: 'professional',
             defaultLanguage: 'English',
             customModel: ''
-        }, (items) => {
-            resolve(items);
-        });
+        };
+
+        if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
+            console.warn("MailGenie: chrome.storage.local is not available. Using defaults.");
+            resolve(defaults);
+            return;
+        }
+
+        try {
+            chrome.storage.local.get(defaults, (items) => {
+                if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.lastError) {
+                    console.warn("MailGenie: Error loading settings:", chrome.runtime.lastError.message);
+                    resolve(defaults);
+                } else {
+                    resolve(items || defaults);
+                }
+            });
+        } catch (e) {
+            console.error("MailGenie: Exception reading settings from storage:", e);
+            resolve(defaults);
+        }
     });
 }
 
@@ -81,13 +99,29 @@ function createLanguageSelect(defaultValue) {
     return select;
 }
 
-function getEmailContent() {
+function getEmailContent(composeContainer) {
+    // If the compose window is inline, try to find the email content nearby first.
+    // Otherwise fall back to the standard global selectors.
     const selectors = [
-        '.h7',
         '.a3s.aiL',
         '.gmail_quote',
+        '.h7',
         '[role="presentation"]'
     ];
+
+    if (composeContainer) {
+        // Look in parent/ancestor nodes or siblings
+        const threadContainer = composeContainer.closest('.g3') || composeContainer.closest('.dw');
+        if (threadContainer) {
+            for (const selector of selectors) {
+                const content = threadContainer.querySelector(selector);
+                if (content && content.innerText.trim()) {
+                    return content.innerText.trim();
+                }
+            }
+        }
+    }
+
     for (const selector of selectors) {
         const content = document.querySelector(selector);
         if (content && content.innerText.trim()) {
@@ -97,127 +131,159 @@ function getEmailContent() {
     return '';
 }
 
-function findComposeToolbar() {
-    const selectors = [
-        '.btC',
-        '.aDh',
-        '[role="toolbar"]',
-        '.gU.Up'
-    ];
-    for (const selector of selectors) {
-        const toolbar = document.querySelector(selector);
-        if (toolbar) {
-            return toolbar;
+function findComposeToolbars() {
+    const toolbars = new Set();
+    
+    // Method 1: Find standard Gmail compose toolbars by class
+    const btCContainers = document.querySelectorAll('.btC');
+    btCContainers.forEach(el => toolbars.add(el));
+    
+    // Method 2: Find using role="toolbar"
+    const roleToolbars = document.querySelectorAll('[role="toolbar"]');
+    roleToolbars.forEach(el => {
+        if (el.querySelector('.btC') || el.closest('.btC') || el.classList.contains('btC')) {
+            toolbars.add(el.closest('.btC') || el);
         }
-    }
-    return null;
+    });
+
+    // Method 3: Find by locating the Send button and going to its container
+    const sendButtons = document.querySelectorAll('div[data-tooltip*="Send"], div[aria-label*="Send"], [role="button"][aria-label*="Send"]');
+    sendButtons.forEach(btn => {
+        const parentToolbar = btn.closest('.btC') || btn.closest('.gU.Up') || btn.parentElement;
+        if (parentToolbar) {
+            toolbars.add(parentToolbar);
+        }
+    });
+
+    return Array.from(toolbars);
 }
 
 async function injectButton() {
-    const existingWrapper = document.querySelector('.mailgenie-wrapper');
-    if (existingWrapper) existingWrapper.remove();
-
-    const toolbar = findComposeToolbar();
-    if (!toolbar) {
-        console.log("MailGenie: Compose Toolbar not found");
+    // Check if context is invalidated
+    if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.id) {
         return;
     }
 
-    console.log("MailGenie: Compose Toolbar found, injecting controls");
+    const toolbars = findComposeToolbars();
+    if (toolbars.length === 0) {
+        return;
+    }
     
     // Fetch user settings
     const settings = await getSettings();
 
-    // Create wrapper container
-    const wrapper = document.createElement('div');
-    wrapper.className = 'mailgenie-wrapper';
-
-    const button = createAIButton();
-    const toneSelect = createToneSelect(settings.defaultTone);
-    const langSelect = createLanguageSelect(settings.defaultLanguage);
-
-    wrapper.appendChild(button);
-    wrapper.appendChild(toneSelect);
-    wrapper.appendChild(langSelect);
-
-    button.addEventListener('click', async () => {
-        const emailContent = getEmailContent();
-        if (!emailContent) {
-            alert('MailGenie: Could not find any original email content to reply to. Please open an email thread.');
+    toolbars.forEach(toolbar => {
+        // Prevent duplicate injection
+        if (toolbar.querySelector('.mailgenie-wrapper')) {
             return;
         }
 
-        try {
-            button.innerHTML = '⌛ Drafting...';
-            button.disabled = true;
-            toneSelect.disabled = true;
-            langSelect.disabled = true;
+        console.log("MailGenie: Injecting controls into toolbar");
 
-            const selectedTone = toneSelect.value;
-            const selectedLanguage = langSelect.value;
+        // Create wrapper container
+        const wrapper = document.createElement('div');
+        wrapper.className = 'mailgenie-wrapper';
 
-            const response = await fetch(`${settings.backendUrl}/api/email/generate`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    emailContent: emailContent,
-                    tone: selectedTone,
-                    provider: settings.provider,
-                    model: settings.customModel,
-                    language: selectedLanguage
-                })
-            });
+        const button = createAIButton();
+        const toneSelect = createToneSelect(settings.defaultTone);
+        const langSelect = createLanguageSelect(settings.defaultLanguage);
 
-            if (!response.ok) {
-                const text = await response.text();
-                throw new Error(text || 'API Request Failed');
+        wrapper.appendChild(button);
+        wrapper.appendChild(toneSelect);
+        wrapper.appendChild(langSelect);
+
+        button.addEventListener('click', async () => {
+            const composeContainer = toolbar.closest('table') || toolbar.closest('[role="dialog"]') || toolbar.closest('form') || toolbar.parentElement;
+            const emailContent = getEmailContent(composeContainer);
+            if (!emailContent) {
+                alert('MailGenie: Could not find any original email content to reply to. Please open an email thread.');
+                return;
             }
 
-            const generatedReply = await response.text();
-            const composeBox = document.querySelector('[role="textbox"][g_editable="true"]');
+            try {
+                button.innerHTML = '⌛ Drafting...';
+                button.disabled = true;
+                toneSelect.disabled = true;
+                langSelect.disabled = true;
 
-            if (composeBox) {
-                composeBox.focus();
-                // Safe insertion command
-                document.execCommand('insertText', false, generatedReply);
-            } else {
-                console.error('MailGenie: Gmail compose textbox not found');
-                alert('MailGenie: Could not insert reply automatically. Copying generated draft to clipboard instead!');
-                navigator.clipboard.writeText(generatedReply);
+                const selectedTone = toneSelect.value;
+                const selectedLanguage = langSelect.value;
+
+                const response = await fetch(`${settings.backendUrl}/api/email/generate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        emailContent: emailContent,
+                        tone: selectedTone,
+                        provider: settings.provider,
+                        model: settings.customModel,
+                        language: selectedLanguage
+                    })
+                });
+
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(text || 'API Request Failed');
+                }
+
+                const generatedReply = await response.text();
+                const composeBox = composeContainer.querySelector('[role="textbox"][g_editable="true"]');
+
+                if (composeBox) {
+                    composeBox.focus();
+                    document.execCommand('insertText', false, generatedReply);
+                } else {
+                    console.error('MailGenie: Gmail compose textbox not found in container');
+                    alert('MailGenie: Could not insert reply automatically. Copying generated draft to clipboard instead!');
+                    navigator.clipboard.writeText(generatedReply);
+                }
+            } catch (error) {
+                console.error('MailGenie Error:', error);
+                alert(`MailGenie: Failed to generate reply. Details: ${error.message}`);
+            } finally {
+                button.innerHTML = '✨ AI Reply';
+                button.disabled = false;
+                toneSelect.disabled = false;
+                langSelect.disabled = false;
             }
-        } catch (error) {
-            console.error('MailGenie Error:', error);
-            alert(`MailGenie: Failed to generate reply. Details: ${error.message}`);
-        } finally {
-            button.innerHTML = '✨ AI Reply';
-            button.disabled = false;
-            toneSelect.disabled = false;
-            langSelect.disabled = false;
-        }
+        });
+
+        // Insert controls as first element in toolbar
+        toolbar.insertBefore(wrapper, toolbar.firstChild);
     });
-
-    // Insert controls as first element in toolbar
-    toolbar.insertBefore(wrapper, toolbar.firstChild);
 }
 
-// Observe Gmail DOM mutations to inject button when compose dialog opens
-const observer = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-        const addedNodes = Array.from(mutation.addedNodes);
-        const hasComposeElements = addedNodes.some(node =>
-            node.nodeType === Node.ELEMENT_NODE && 
-            (node.matches('.aDh, .btC, [role="dialog"]') || node.querySelector('.aDh, .btC, [role="dialog"]'))
-        );
-
-        if (hasComposeElements) {
-            setTimeout(injectButton, 400);
-        }
+// Observe Gmail DOM mutations with debounce/throttling to handle dynamic compose rendering
+let injectTimeout = null;
+const observer = new MutationObserver(() => {
+    // Graceful invalidation check: stop observer if extension context is invalidated
+    if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.id) {
+        observer.disconnect();
+        console.log("MailGenie: Context invalidated, disconnected MutationObserver.");
+        return;
     }
+
+    if (injectTimeout) {
+        clearTimeout(injectTimeout);
+    }
+    injectTimeout = setTimeout(injectButton, 300);
 });
 
 observer.observe(document.body, {
     childList: true,
     subtree: true
 });
+
+// Run immediately on script load
+injectButton();
+
+// Fallback interval to guarantee rendering in edge cases (e.g. context restores, fast SPA state changes)
+const fallbackInterval = setInterval(() => {
+    if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.id) {
+        clearInterval(fallbackInterval);
+        return;
+    }
+    injectButton();
+}, 1000);
