@@ -49,32 +49,45 @@
 
 /* Select Dropdowns */
 .mailgenie-select {
-  background-color: transparent !important;
+  background-color: #ffffff !important;
   color: #1f2937 !important;
   border: 1px solid rgba(0, 0, 0, 0.15) !important;
   border-radius: 12px !important;
-  padding: 0 6px !important;
+  padding: 0 16px 0 8px !important;
   height: 24px !important;
   font-size: 12px !important;
   outline: none !important;
   cursor: pointer !important;
   transition: all 0.2s ease !important;
-  max-width: 100px;
-}
-
-/* Dark mode fallback for selects inside Gmail if user uses Gmail Dark Theme */
-@media (prefers-color-scheme: dark) {
-  .mailgenie-select {
-    color: #e5e7eb !important;
-    background-color: #1f2937 !important;
-    border-color: rgba(255, 255, 255, 0.15) !important;
-  }
-  .mailgenie-select option {
-    background-color: #1f2937 !important;
-    color: #e5e7eb !important;
-  }
+  max-width: 110px;
 }
 
 .mailgenie-select:hover {
   border-color: rgba(99, 102, 241, 0.5) !important;
+}
+
+.mailgenie-select:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+/* Dark mode overrides for the extension wrapper and selectors */
+.mailgenie-dark.mailgenie-wrapper {
+  background: rgba(165, 180, 252, 0.1) !important;
+  border-color: rgba(165, 180, 252, 0.3) !important;
+}
+
+.mailgenie-dark .mailgenie-select {
+  color: #f3f4f6 !important;
+  background-color: #1f2937 !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.mailgenie-dark .mailgenie-select option {
+  background-color: #1f2937 !important;
+  color: #f3f4f6 !important;
+}
+
+.mailgenie-dark .mailgenie-select:disabled {
+  background-color: rgba(255, 255, 255, 0.05) !important;
 }
