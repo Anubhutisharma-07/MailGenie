@@ -1,0 +1,192 @@
+/* Design System & Premium CSS Styles for MailGenie */
+
+:root {
+  --font-family-title: 'Outfit', 'Inter', sans-serif;
+  --font-family-body: 'Inter', sans-serif;
+
+  /* Light Theme Colors */
+  --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  --card-bg: rgba(255, 255, 255, 0.85);
+  --card-border: rgba(255, 255, 255, 0.4);
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --primary-glow: rgba(99, 102, 241, 0.15);
+  --accent-color: #6366f1;
+  --accent-hover: #4f46e5;
+  --success-color: #10b981;
+}
+
+[data-theme='dark'] {
+  /* Dark Theme Colors */
+  --bg-gradient: radial-gradient(circle at top right, #0f172a, #020617);
+  --card-bg: rgba(30, 41, 59, 0.7);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --primary-glow: rgba(99, 102, 241, 0.3);
+  --accent-color: #818cf8;
+  --accent-hover: #6366f1;
+  --success-color: #34d399;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family-body);
+  background: var(--bg-gradient);
+  background-attachment: fixed;
+  color: var(--text-primary);
+  min-height: 100vh;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* Glassmorphism Cards */
+.glass-card {
+  background: var(--card-bg) !important;
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  border: 1px solid var(--card-border) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.08) !important;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, border 0.3s ease !important;
+}
+
+.glass-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px 0 rgba(99, 102, 241, 0.15) !important;
+  border-color: rgba(99, 102, 241, 0.25) !important;
+}
+
+/* Header & Title Design */
+.app-title {
+  font-family: var(--font-family-title) !important;
+  background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 800 !important;
+  letter-spacing: -1px;
+}
+
+/* Gradient Buttons */
+.gradient-btn {
+  background: linear-gradient(135deg, var(--accent-color) 0%, #c084fc 100%) !important;
+  color: #ffffff !important;
+  font-family: var(--font-family-title) !important;
+  font-weight: 600 !important;
+  border-radius: 12px !important;
+  text-transform: none !important;
+  box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.4) !important;
+  transition: all 0.3s ease !important;
+}
+
+.gradient-btn:hover:not(:disabled) {
+  transform: scale(1.02);
+  box-shadow: 0 6px 20px 0 rgba(99, 102, 241, 0.6) !important;
+  filter: brightness(1.1);
+}
+
+.gradient-btn:disabled {
+  opacity: 0.6;
+  box-shadow: none !important;
+}
+
+/* Glowing Form Controls */
+.glow-input .MuiOutlinedInput-root {
+  border-radius: 12px !important;
+  transition: all 0.3s ease;
+}
+
+.glow-input .MuiOutlinedInput-root.Mui-focused {
+  box-shadow: 0 0 0 4px var(--primary-glow) !important;
+}
+
+/* History Logs & List Design */
+.history-card {
+  border-radius: 16px !important;
+  border: 1px solid var(--card-border) !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.history-card:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(99, 102, 241, 0.2) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Badges */
+.badge-provider {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.badge-groq {
+  background: rgba(245, 80, 54, 0.12);
+  color: #f55036;
+}
+
+.badge-openai {
+  background: rgba(16, 163, 127, 0.12);
+  color: #10a37f;
+}
+
+.badge-gemini {
+  background: rgba(26, 115, 232, 0.12);
+  color: #1a73e8;
+}
+
+.badge-tone {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--accent-color);
+  font-weight: 600;
+}
+
+.badge-lang {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  background: rgba(192, 132, 252, 0.12);
+  color: #c084fc;
+  font-weight: 600;
+}
+
+/* Copy Animation */
+@keyframes pop-check {
+  0% { transform: scale(0.8); opacity: 0; }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.copy-success-icon {
+  animation: pop-check 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-secondary);
+  opacity: 0.3;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-color);
+}

@@ -6,4 +6,7 @@ import lombok.Data;
 public class EmailRequest {
     private String emailContent;
     private String tone;
+    private String provider; // e.g., "groq", "openai", "gemini"
+    private String model;    // e.g., specific model name
+    private String language; // e.g., "English", "Spanish", "French"
 }

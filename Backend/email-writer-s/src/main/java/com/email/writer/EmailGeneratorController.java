@@ -20,13 +20,18 @@ public class EmailGeneratorController {
         
         // Auto-save generated email to history if it doesn't indicate an error
         if (response != null && !response.startsWith("Error:") && 
-            !response.startsWith("Groq API error") && 
+            !response.contains("API error") && 
             !response.startsWith("Unexpected error")) {
             
+            String resolvedProvider = emailRequest.getProvider() != null ? emailRequest.getProvider() : "groq";
+            String resolvedLanguage = emailRequest.getLanguage() != null ? emailRequest.getLanguage() : "English";
+
             EmailHistory history = EmailHistory.builder()
                     .originalContent(emailRequest.getEmailContent())
                     .tone(emailRequest.getTone())
                     .generatedReply(response)
+                    .provider(resolvedProvider)
+                    .language(resolvedLanguage)
                     .build();
             emailHistoryService.saveHistory(history);
         }
@@ -34,4 +39,8 @@ public class EmailGeneratorController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/config")
+    public ResponseEntity<java.util.Map<String, Boolean>> getProviderConfig() {
+        return ResponseEntity.ok(emailGeneratorService.getProviderConfigStatus());
+    }
 }
