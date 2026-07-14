@@ -28,7 +28,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Save configurations
   saveBtn.addEventListener('click', () => {
-    const backendUrl = backendUrlInput.value.trim() || 'http://localhost:8080';
+    let backendUrl = backendUrlInput.value.trim() || 'http://localhost:8080';
+    
+    // Auto-prepend protocol if missing
+    if (backendUrl && !/^https?:\/\//i.test(backendUrl)) {
+      backendUrl = 'http://' + backendUrl;
+    }
+    backendUrlInput.value = backendUrl;
+
     const provider = providerSelect.value;
     const defaultTone = defaultToneSelect.value;
     const defaultLanguage = defaultLanguageSelect.value;
@@ -65,15 +72,15 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(response => {
         if (response.ok) {
           serverStatus.textContent = 'Online';
-          serverStatus.classList.add('status-online');
+          serverStatus.className = 'status-indicator status-online';
         } else {
           serverStatus.textContent = 'Error';
-          serverStatus.classList.add('status-offline');
+          serverStatus.className = 'status-indicator status-offline';
         }
       })
       .catch(() => {
         serverStatus.textContent = 'Offline';
-        serverStatus.classList.add('status-offline');
+        serverStatus.className = 'status-indicator status-offline';
       });
   }
 });
