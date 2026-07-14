@@ -9,4 +9,6 @@ public class EmailRequest {
     private String provider; // e.g., "groq", "openai", "gemini"
     private String model;    // e.g., specific model name
     private String language; // e.g., "English", "Spanish", "French"
+    private String apiKey;   // Optional API key passed from frontend
 }
+

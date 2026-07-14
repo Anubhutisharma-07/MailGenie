@@ -13,19 +13,42 @@ public class EmailGeneratorController {
 
     private final EmailGeneratorService emailGeneratorService;
     private final EmailHistoryService emailHistoryService;
+    private final ApiRequestMetricService apiRequestMetricService;
 
     @PostMapping("/generate")
     public ResponseEntity<String> generateEmail(@RequestBody EmailRequest emailRequest){
+        long startTime = System.currentTimeMillis();
         String response = emailGeneratorService.generateEmailReply(emailRequest);
-        
-        // Auto-save generated email to history if it doesn't indicate an error
-        if (response != null && !response.startsWith("Error:") && 
-            !response.contains("API error") && 
-            !response.startsWith("Unexpected error")) {
-            
-            String resolvedProvider = emailRequest.getProvider() != null ? emailRequest.getProvider() : "groq";
-            String resolvedLanguage = emailRequest.getLanguage() != null ? emailRequest.getLanguage() : "English";
+        long duration = System.currentTimeMillis() - startTime;
 
+        String resolvedProvider = emailRequest.getProvider() != null ? emailRequest.getProvider() : "groq";
+        String resolvedLanguage = emailRequest.getLanguage() != null ? emailRequest.getLanguage() : "English";
+        String resolvedModel = emailRequest.getModel() != null && !emailRequest.getModel().trim().isEmpty() 
+                ? emailRequest.getModel() : "default";
+
+        // Determine status
+        boolean isSuccess = response != null && !response.startsWith("Error:") && 
+                            !response.contains("API error") && 
+                            !response.startsWith("Unexpected error");
+        String status = isSuccess ? "SUCCESS" : "ERROR";
+        int charCount = (isSuccess && response != null) ? response.length() : 0;
+
+        // Save metric record
+        try {
+            ApiRequestMetric metric = ApiRequestMetric.builder()
+                    .provider(resolvedProvider)
+                    .model(resolvedModel)
+                    .durationMs(duration)
+                    .status(status)
+                    .characterCount(charCount)
+                    .build();
+            apiRequestMetricService.saveMetric(metric);
+        } catch (Exception e) {
+            System.err.println("Failed to log API request metrics: " + e.getMessage());
+        }
+        
+        // Auto-save generated email to history if successful
+        if (isSuccess) {
             EmailHistory history = EmailHistory.builder()
                     .originalContent(emailRequest.getEmailContent())
                     .tone(emailRequest.getTone())
