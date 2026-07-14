@@ -52,35 +52,45 @@ public class EmailGeneratorService {
         switch (provider) {
             case "openai":
                 apiUrl = openaiApiUrl;
-                apiKey = openaiApiKey;
+                apiKey = (emailRequest.getApiKey() != null && !emailRequest.getApiKey().trim().isEmpty())
+                        ? emailRequest.getApiKey() : openaiApiKey;
                 defaultModel = "gpt-4o-mini";
                 break;
             case "gemini":
                 apiUrl = geminiApiUrl;
-                apiKey = geminiApiKey;
+                apiKey = (emailRequest.getApiKey() != null && !emailRequest.getApiKey().trim().isEmpty())
+                        ? emailRequest.getApiKey() : geminiApiKey;
                 defaultModel = "gemini-2.5-flash";
                 break;
             case "claude":
             case "anthropic":
                 apiUrl = anthropicApiUrl;
-                apiKey = anthropicApiKey;
+                apiKey = (emailRequest.getApiKey() != null && !emailRequest.getApiKey().trim().isEmpty())
+                        ? emailRequest.getApiKey() : anthropicApiKey;
                 defaultModel = "claude-3-5-sonnet-20241022";
                 provider = "claude";
                 break;
             case "groq":
             default:
                 apiUrl = groqApiUrl;
-                apiKey = groqApiKey;
+                apiKey = (emailRequest.getApiKey() != null && !emailRequest.getApiKey().trim().isEmpty())
+                        ? emailRequest.getApiKey() : groqApiKey;
                 defaultModel = "llama-3.3-70b-versatile";
                 provider = "groq"; // normalize
                 break;
         }
 
+        // Clean placeholder key so it acts as unconfigured
+        if (apiKey != null && apiKey.trim().equals("your_groq_api_key_here")) {
+            apiKey = null;
+        }
+
         if (apiKey == null || apiKey.trim().isEmpty()) {
-            // Fallback: search for first configured provider
-            if (groqApiKey != null && !groqApiKey.trim().isEmpty()) {
+            // Fallback: search for first configured provider (ignoring placeholders)
+            String cleanGroqKey = (groqApiKey != null && !groqApiKey.trim().equals("your_groq_api_key_here")) ? groqApiKey : null;
+            if (cleanGroqKey != null && !cleanGroqKey.trim().isEmpty()) {
                 apiUrl = groqApiUrl;
-                apiKey = groqApiKey;
+                apiKey = cleanGroqKey;
                 defaultModel = "llama-3.3-70b-versatile";
                 provider = "groq";
             } else if (openaiApiKey != null && !openaiApiKey.trim().isEmpty()) {
@@ -142,7 +152,7 @@ public class EmailGeneratorService {
             String response = requestSpec.bodyValue(requestBody)
                     .retrieve()
                     .bodyToMono(String.class)
-                    .block();
+                    .block(java.time.Duration.ofSeconds(15));
             return extractResponseContent(response, provider);
         } catch (WebClientResponseException e) {
             return provider.toUpperCase() + " API error [" + e.getStatusCode() + "]: " + e.getResponseBodyAsString();

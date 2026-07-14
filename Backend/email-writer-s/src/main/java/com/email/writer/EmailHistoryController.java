@@ -50,10 +50,26 @@ public class EmailHistoryController {
      */
     @PutMapping("/{id}/comment")
     public ResponseEntity<EmailHistory> updateComment(@PathVariable Long id, @RequestBody String comment) {
-        // Strip leading/trailing quotes if sent as raw JSON text
         String cleanComment = comment;
-        if (comment != null && comment.startsWith("\"") && comment.endsWith("\"") && comment.length() > 1) {
-            cleanComment = comment.substring(1, comment.length() - 1);
+        if (comment != null) {
+            // Strip leading/trailing quotes if sent as raw JSON text
+            if (comment.startsWith("\"") && comment.endsWith("\"") && comment.length() > 1) {
+                cleanComment = comment.substring(1, comment.length() - 1);
+            }
+            // Check if it's sent as a JSON object, e.g. {"comment":"..."}
+            String trimmed = comment.trim();
+            if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+                try {
+                    com.fasterxml.jackson.databind.JsonNode node = new com.fasterxml.jackson.databind.ObjectMapper().readTree(trimmed);
+                    if (node.has("comment")) {
+                        cleanComment = node.get("comment").asText();
+                    } else if (node.has("userComment")) {
+                        cleanComment = node.get("userComment").asText();
+                    }
+                } catch (Exception e) {
+                    // Fallback to raw string if parsing fails
+                }
+            }
         }
         return service.updateComment(id, cleanComment)
                 .map(ResponseEntity::ok)
