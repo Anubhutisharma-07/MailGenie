@@ -184,10 +184,10 @@ npm run dev
 
 ## 🛣️ Roadmap
 
-- [ ] Tone selector inside the Gmail extension UI
-- [ ] Support for additional LLM providers (OpenAI, Claude, Gemini)
-- [ ] Reply history / saved templates
-- [ ] Multi-language support
+- [x] Tone selector inside the Gmail extension UI
+- [x] Support for additional LLM providers (OpenAI, Claude, Gemini)
+- [x] Reply history / saved templates
+- [x] Multi-language support
 
 ---
 

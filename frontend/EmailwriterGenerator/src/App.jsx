@@ -47,7 +47,7 @@ function App() {
   const [tempComment, setTempComment] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [copied, setCopied] = useState(false);
-  const [providerConfig, setProviderConfig] = useState({ groq: true, openai: false, gemini: false });
+  const [providerConfig, setProviderConfig] = useState({ groq: true, openai: false, gemini: false, claude: false });
 
   // Material UI Custom Theme
   const theme = createTheme({
@@ -112,6 +112,7 @@ function App() {
         if (response.data.groq) setProvider( 'groq' );
         else if (response.data.openai) setProvider( 'openai' );
         else if (response.data.gemini) setProvider( 'gemini' );
+        else if (response.data.claude) setProvider( 'claude' );
       }
     } catch (err) {
       console.error("Failed to fetch provider config:", err);
@@ -258,6 +259,9 @@ function App() {
                     </MenuItem>
                     <MenuItem value="gemini" disabled={!providerConfig.gemini}>
                       ♊ Gemini {providerConfig.gemini ? ' (Active)' : ' (Not configured)'}
+                    </MenuItem>
+                    <MenuItem value="claude" disabled={!providerConfig.claude}>
+                      🦉 Claude {providerConfig.claude ? ' (Active)' : ' (Not configured)'}
                     </MenuItem>
                   </Select>
                 </FormControl>
