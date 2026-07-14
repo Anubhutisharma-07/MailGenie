@@ -1,3 +1,4 @@
+// MailGenie: Premium Gmail Integration Content Script
 console.log("MailGenie Extension - Content Script Loaded");
 
 // Load stored configurations with defaults, safely checking for API availability
