@@ -142,6 +142,11 @@ body {
   color: #1a73e8;
 }
 
+.badge-claude {
+  background: rgba(217, 119, 6, 0.12);
+  color: #d97706;
+}
+
 .badge-tone {
   padding: 4px 10px;
   border-radius: 20px;

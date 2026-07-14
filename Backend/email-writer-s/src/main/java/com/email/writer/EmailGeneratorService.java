@@ -32,6 +32,12 @@ public class EmailGeneratorService {
     @Value("${gemini.api.key:}")
     private String geminiApiKey;
 
+    @Value("${anthropic.api.url:https://api.anthropic.com/v1/messages}")
+    private String anthropicApiUrl;
+
+    @Value("${anthropic.api.key:}")
+    private String anthropicApiKey;
+
     public EmailGeneratorService(WebClient.Builder webClientBuilder) {
         this.webClient = webClientBuilder.build();
     }
@@ -53,6 +59,13 @@ public class EmailGeneratorService {
                 apiUrl = geminiApiUrl;
                 apiKey = geminiApiKey;
                 defaultModel = "gemini-2.5-flash";
+                break;
+            case "claude":
+            case "anthropic":
+                apiUrl = anthropicApiUrl;
+                apiKey = anthropicApiKey;
+                defaultModel = "claude-3-5-sonnet-20241022";
+                provider = "claude";
                 break;
             case "groq":
             default:
@@ -80,6 +93,11 @@ public class EmailGeneratorService {
                 apiKey = geminiApiKey;
                 defaultModel = "gemini-2.5-flash";
                 provider = "gemini";
+            } else if (anthropicApiKey != null && !anthropicApiKey.trim().isEmpty()) {
+                apiUrl = anthropicApiUrl;
+                apiKey = anthropicApiKey;
+                defaultModel = "claude-3-5-sonnet-20241022";
+                provider = "claude";
             } else {
                 return "Error: No API providers are configured. Please check application.properties.";
             }
@@ -91,23 +109,41 @@ public class EmailGeneratorService {
 
         String prompt = buildPrompt(emailRequest);
 
-        Map<String, Object> requestBody = Map.of(
-                "model", model,
-                "messages", List.of(
-                        Map.of("role", "user", "content", prompt)
-                )
-        );
+        Map<String, Object> requestBody;
+        if ("claude".equals(provider)) {
+            requestBody = Map.of(
+                    "model", model,
+                    "max_tokens", 1024,
+                    "messages", List.of(
+                            Map.of("role", "user", "content", prompt)
+                    )
+            );
+        } else {
+            requestBody = Map.of(
+                    "model", model,
+                    "messages", List.of(
+                            Map.of("role", "user", "content", prompt)
+                    )
+            );
+        }
 
         try {
-            String response = webClient.post()
+            WebClient.RequestBodySpec requestSpec = webClient.post()
                     .uri(apiUrl)
-                    .header("Content-Type", "application/json")
-                    .header("Authorization", "Bearer " + apiKey)
-                    .bodyValue(requestBody)
+                    .header("Content-Type", "application/json");
+
+            if ("claude".equals(provider)) {
+                requestSpec = requestSpec.header("x-api-key", apiKey)
+                        .header("anthropic-version", "2023-06-01");
+            } else {
+                requestSpec = requestSpec.header("Authorization", "Bearer " + apiKey);
+            }
+
+            String response = requestSpec.bodyValue(requestBody)
                     .retrieve()
                     .bodyToMono(String.class)
                     .block();
-            return extractResponseContent(response);
+            return extractResponseContent(response, provider);
         } catch (WebClientResponseException e) {
             return provider.toUpperCase() + " API error [" + e.getStatusCode() + "]: " + e.getResponseBodyAsString();
         } catch (Exception e) {
@@ -122,14 +158,21 @@ public class EmailGeneratorService {
         return Map.of(
                 "groq", groqApiKey != null && !groqApiKey.trim().isEmpty(),
                 "openai", openaiApiKey != null && !openaiApiKey.trim().isEmpty(),
-                "gemini", geminiApiKey != null && !geminiApiKey.trim().isEmpty()
+                "gemini", geminiApiKey != null && !geminiApiKey.trim().isEmpty(),
+                "claude", anthropicApiKey != null && !anthropicApiKey.trim().isEmpty()
         );
     }
 
-    private String extractResponseContent(String response) {
+    private String extractResponseContent(String response, String provider) {
         try {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode rootNode = mapper.readTree(response);
+            if ("claude".equalsIgnoreCase(provider)) {
+                return rootNode.path("content")
+                        .get(0)
+                        .path("text")
+                        .asText();
+            }
             return rootNode.path("choices")
                     .get(0)
                     .path("message")
