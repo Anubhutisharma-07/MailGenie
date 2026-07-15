@@ -446,6 +446,28 @@ function App() {
                     <Paper className="glass-card" sx={{ p: 4 }}>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                         
+                        {customTemplates.length > 0 && (
+                          <FormControl fullWidth size="small">
+                            <InputLabel id="quick-template-label">📂 Quick Insert Template</InputLabel>
+                            <Select
+                              labelId="quick-template-label"
+                              value=""
+                              label="Quick Insert Template"
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  setEmailContent(e.target.value);
+                                }
+                              }}
+                            >
+                              {customTemplates.map((t) => (
+                                <MenuItem key={t.id || t.title} value={t.body}>
+                                  {t.title}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        )}
+
                         <TextField 
                           fullWidth
                           multiline
