@@ -372,6 +372,31 @@ async function injectButton() {
                 }
 
                 if (!inserted) {
+                    try {
+                        const selection = window.getSelection();
+                        let range;
+                        if (selection.rangeCount > 0) {
+                            range = selection.getRangeAt(0);
+                        } else {
+                            range = document.createRange();
+                            range.selectNodeContents(composeBox);
+                            range.collapse(true);
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+                        }
+                        range.deleteContents();
+                        const textNode = document.createTextNode(tplBody);
+                        range.insertNode(textNode);
+                        range.collapse(false);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                        inserted = true;
+                    } catch (selError) {
+                        console.error('MailGenie: Selection API template insertion failed.', selError);
+                    }
+                }
+
+                if (!inserted) {
                     composeBox.innerHTML = tplBody.replace(/\n/g, '<br>') + '<br><br>' + composeBox.innerHTML;
                 }
 
@@ -458,16 +483,23 @@ async function injectButton() {
                     if (!inserted) {
                         try {
                             const selection = window.getSelection();
+                            let range;
                             if (selection.rangeCount > 0) {
-                                const range = selection.getRangeAt(0);
-                                range.deleteContents();
-                                const textNode = document.createTextNode(generatedReply);
-                                range.insertNode(textNode);
-                                range.collapse(false);
+                                range = selection.getRangeAt(0);
+                            } else {
+                                range = document.createRange();
+                                range.selectNodeContents(composeBox);
+                                range.collapse(true);
                                 selection.removeAllRanges();
                                 selection.addRange(range);
-                                inserted = true;
                             }
+                            range.deleteContents();
+                            const textNode = document.createTextNode(generatedReply);
+                            range.insertNode(textNode);
+                            range.collapse(false);
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+                            inserted = true;
                         } catch (selError) {
                             console.error('MailGenie: Selection API insertion failed.', selError);
                         }

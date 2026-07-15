@@ -165,8 +165,9 @@ public class EmailGeneratorService {
      * Checks which LLM providers have keys configured.
      */
     public Map<String, Boolean> getProviderConfigStatus() {
+        boolean isGroqConfigured = groqApiKey != null && !groqApiKey.trim().isEmpty() && !groqApiKey.trim().equals("your_groq_api_key_here");
         return Map.of(
-                "groq", groqApiKey != null && !groqApiKey.trim().isEmpty(),
+                "groq", isGroqConfigured,
                 "openai", openaiApiKey != null && !openaiApiKey.trim().isEmpty(),
                 "gemini", geminiApiKey != null && !geminiApiKey.trim().isEmpty(),
                 "claude", anthropicApiKey != null && !anthropicApiKey.trim().isEmpty()
