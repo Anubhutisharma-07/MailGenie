@@ -69,14 +69,7 @@ function App() {
   const [providerConfig, setProviderConfig] = useState({ groq: false, openai: false, gemini: false, claude: false });
 
   // Custom and preset templates
-  const [customTemplates, setCustomTemplates] = useState(() => {
-    const saved = localStorage.getItem('mailgenie_custom_templates');
-    return saved ? JSON.parse(saved) : [
-      { id: 'p1', title: '💼 Professional Follow-up', body: 'Dear [Name],\n\nI wanted to follow up on our discussion regarding [Topic]. Please let me know if you have had a chance to review the details.\n\nBest regards,\n[Your Name]' },
-      { id: 'p2', title: '📅 Schedule Meeting', body: 'Hi [Name],\n\nI would love to schedule a quick 15-minute call to align on our next steps. Please let me know your availability this week.\n\nThanks,\n[Your Name]' },
-      { id: 'p3', title: '☕ Casual Check-in', body: 'Hey [Name],\n\nHope you are doing well! Just wanted to check in and see how things are going with [Project]. Let me know when you are free to catch up.\n\nCheers,\n[Your Name]' }
-    ];
-  });
+  const [customTemplates, setCustomTemplates] = useState([]);
 
   const [newTemplateTitle, setNewTemplateTitle] = useState('');
   const [newTemplateBody, setNewTemplateBody] = useState('');
@@ -160,9 +153,19 @@ function App() {
       // Fetch history if online
       const historyResponse = await axios.get(`${backendUrl}/api/history`);
       setHistoryList(historyResponse.data);
+
+      // Fetch templates from backend API if online
+      const templatesResponse = await axios.get(`${backendUrl}/api/templates`);
+      setCustomTemplates(templatesResponse.data);
     } catch (err) {
       console.error("Backend health check failed:", err);
       setBackendOnline(false);
+      
+      // Fallback: load templates from localStorage if backend is offline
+      const saved = localStorage.getItem('mailgenie_custom_templates');
+      if (saved) {
+        setCustomTemplates(JSON.parse(saved));
+      }
     }
   };
 
@@ -228,25 +231,55 @@ function App() {
   };
 
   // Templates CRUD
-  const handleAddTemplate = () => {
+  const handleAddTemplate = async () => {
     if (!newTemplateTitle.trim() || !newTemplateBody.trim()) return;
+    
     const newTpl = {
-      id: Date.now().toString(),
       title: newTemplateTitle,
       body: newTemplateBody
     };
-    const updated = [...customTemplates, newTpl];
-    setCustomTemplates(updated);
-    localStorage.setItem('mailgenie_custom_templates', JSON.stringify(updated));
-    setNewTemplateTitle('');
-    setNewTemplateBody('');
-  };
 
-  const handleDeleteTemplate = (id) => {
-    if (window.confirm("Delete this template?")) {
-      const updated = customTemplates.filter(t => t.id !== id);
+    if (backendOnline) {
+      try {
+        const response = await axios.post(`${backendUrl}/api/templates`, newTpl);
+        setCustomTemplates(prev => [response.data, ...prev]);
+        setNewTemplateTitle('');
+        setNewTemplateBody('');
+      } catch (err) {
+        console.error("Failed to save template to backend:", err);
+        alert("Failed to save template to backend.");
+      }
+    } else {
+      // Fallback to localStorage
+      const localTpl = {
+        id: Date.now().toString(),
+        title: newTemplateTitle,
+        body: newTemplateBody
+      };
+      const updated = [localTpl, ...customTemplates];
       setCustomTemplates(updated);
       localStorage.setItem('mailgenie_custom_templates', JSON.stringify(updated));
+      setNewTemplateTitle('');
+      setNewTemplateBody('');
+    }
+  };
+
+  const handleDeleteTemplate = async (id) => {
+    if (window.confirm("Delete this template?")) {
+      if (backendOnline && typeof id === 'number') {
+        try {
+          await axios.delete(`${backendUrl}/api/templates/${id}`);
+          setCustomTemplates(prev => prev.filter(t => t.id !== id));
+        } catch (err) {
+          console.error("Failed to delete template from backend:", err);
+          alert("Failed to delete template.");
+        }
+      } else {
+        // LocalStorage fallback (id is string for local templates)
+        const updated = customTemplates.filter(t => t.id !== id);
+        setCustomTemplates(updated);
+        localStorage.setItem('mailgenie_custom_templates', JSON.stringify(updated));
+      }
     }
   };
 
