@@ -139,18 +139,24 @@ function getEmailContent(composeContainer) {
         const threadContainer = composeContainer.closest('.g3') || composeContainer.closest('.dw');
         if (threadContainer) {
             for (const selector of selectors) {
-                const content = threadContainer.querySelector(selector);
-                if (content && content.innerText.trim()) {
-                    return content.innerText.trim();
+                const contents = threadContainer.querySelectorAll(selector);
+                if (contents.length > 0) {
+                    const latestContent = contents[contents.length - 1];
+                    if (latestContent && latestContent.innerText.trim()) {
+                        return latestContent.innerText.trim();
+                    }
                 }
             }
         }
     }
 
     for (const selector of selectors) {
-        const content = document.querySelector(selector);
-        if (content && content.innerText.trim()) {
-            return content.innerText.trim();
+        const contents = document.querySelectorAll(selector);
+        if (contents.length > 0) {
+            const latestContent = contents[contents.length - 1];
+            if (latestContent && latestContent.innerText.trim()) {
+                return latestContent.innerText.trim();
+            }
         }
     }
     return '';
@@ -267,9 +273,19 @@ async function injectButton() {
 
         button.addEventListener('click', async () => {
             const { box: composeBox, container: composeContainer } = findComposeBox(toolbar);
-            const emailContent = getEmailContent(composeContainer);
+            let emailContent = getEmailContent(composeContainer);
+            let isComposeMode = false;
+
             if (!emailContent) {
-                alert('MailGenie: Could not find any original email content to reply to. Please open an email thread.');
+                // Check if user has typed something in the compose box to use as instructions
+                if (composeBox && composeBox.innerText.trim()) {
+                    emailContent = composeBox.innerText.trim();
+                    isComposeMode = true;
+                }
+            }
+
+            if (!emailContent) {
+                alert('MailGenie: Please open an email thread to reply to, or type a brief instruction in the editor to generate a new email.');
                 return;
             }
 
@@ -293,7 +309,8 @@ async function injectButton() {
                         provider: settings.provider,
                         model: settings.customModel,
                         language: selectedLanguage,
-                        apiKey: settings.apiKey // Pass custom API key to override backend setting if supplied
+                        apiKey: settings.apiKey, // Pass custom API key to override backend setting if supplied
+                        composeMode: isComposeMode
                     })
                 });
 
@@ -306,6 +323,18 @@ async function injectButton() {
 
                 if (composeBox) {
                     composeBox.focus();
+                    
+                    // Collapse selection to start of the editor (before signatures/quotes)
+                    try {
+                        const selection = window.getSelection();
+                        const range = document.createRange();
+                        range.selectNodeContents(composeBox);
+                        range.collapse(true); // true collapses range to its start
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                    } catch (cursorError) {
+                        console.warn('MailGenie: Could not set cursor to start of composer', cursorError);
+                    }
                     
                     let inserted = false;
                     try {
@@ -333,7 +362,8 @@ async function injectButton() {
                     }
                     
                     if (!inserted) {
-                        composeBox.innerText = generatedReply;
+                        // Hard fallback: prepend generated email text to preserve signature/replies
+                        composeBox.innerHTML = generatedReply.replace(/\n/g, '<br>') + '<br><br>' + composeBox.innerHTML;
                     }
                     
                     // Dispatch change events to trigger Gmail's internal state updates

@@ -195,7 +195,13 @@ public class EmailGeneratorService {
 
     private String buildPrompt(EmailRequest emailRequest) {
         StringBuilder prompt = new StringBuilder();
-        prompt.append("Generate an appropriate email reply for the following email content. Do not generate a subject line. ");
+        if (emailRequest.isComposeMode()) {
+            prompt.append("Write a complete email based on the following instructions. ");
+            prompt.append("Respond ONLY with the email body text. Do not include any subject lines, conversational prefixes, intros, explanations, or outros. The output must be ready to insert directly into the composer. ");
+        } else {
+            prompt.append("Generate an appropriate email reply for the following email content. ");
+            prompt.append("Respond ONLY with the direct email body text. Do not include any subject lines, conversational prefixes, intros, explanations, or outros. The reply must be ready to insert directly into the composer. ");
+        }
         
         if (emailRequest.getTone() != null && !emailRequest.getTone().trim().isEmpty()) {
             prompt.append("Use a ").append(emailRequest.getTone()).append(" tone. ");
@@ -205,7 +211,11 @@ public class EmailGeneratorService {
             prompt.append("Write the response strictly in ").append(emailRequest.getLanguage()).append(". ");
         }
         
-        prompt.append("\nOriginal email:\n").append(emailRequest.getEmailContent());
+        if (emailRequest.isComposeMode()) {
+            prompt.append("\nInstructions:\n").append(emailRequest.getEmailContent());
+        } else {
+            prompt.append("\nOriginal email:\n").append(emailRequest.getEmailContent());
+        }
         return prompt.toString();
     }
 }
