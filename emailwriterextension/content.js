@@ -1,6 +1,46 @@
 // MailGenie: Premium Gmail Integration Content Script
 console.log("MailGenie Extension - Content Script Loaded");
 
+let cachedTemplates = [];
+let templatesFetched = false;
+
+async function fetchTemplates(backendUrl) {
+    if (templatesFetched) return cachedTemplates;
+    try {
+        const cleanUrl = backendUrl.endsWith('/') ? backendUrl.slice(0, -1) : backendUrl;
+        const response = await fetch(`${cleanUrl}/api/templates`);
+        if (response.ok) {
+            cachedTemplates = await response.json();
+            templatesFetched = true;
+            console.log("MailGenie: Fetched templates from backend", cachedTemplates);
+        }
+    } catch (err) {
+        console.warn("MailGenie: Failed to fetch templates from backend", err);
+    }
+    return cachedTemplates;
+}
+
+function repopulateTemplateSelects() {
+    const selects = document.querySelectorAll('.mailgenie-template-select');
+    selects.forEach(select => {
+        const currentValue = select.value;
+        // Clear all except the first option (placeholder)
+        while (select.options.length > 1) {
+            select.remove(1);
+        }
+        // Populate new templates
+        cachedTemplates.forEach(tpl => {
+            const option = document.createElement('option');
+            option.value = tpl.body;
+            option.text = tpl.title;
+            if (tpl.body === currentValue) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+    });
+}
+
 // Load stored configurations with defaults, safely checking for API availability
 function getSettings() {
     return new Promise((resolve) => {
@@ -70,7 +110,7 @@ function createAIButton() {
 
 function createToneSelect(defaultValue) {
     const select = document.createElement('select');
-    select.className = 'mailgenie-select';
+    select.className = 'mailgenie-select mailgenie-tone-select';
     select.title = 'Select reply tone';
     
     const tones = [
@@ -98,7 +138,7 @@ function createToneSelect(defaultValue) {
 
 function createLanguageSelect(defaultValue) {
     const select = document.createElement('select');
-    select.className = 'mailgenie-select';
+    select.className = 'mailgenie-select mailgenie-lang-select';
     select.title = 'Select reply language';
 
     const languages = [
@@ -117,6 +157,31 @@ function createLanguageSelect(defaultValue) {
         option.value = l.value;
         option.text = l.label;
         if (l.value === defaultValue) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    });
+
+    return select;
+}
+
+function createTemplateSelect(defaultValue) {
+    const select = document.createElement('select');
+    select.className = 'mailgenie-select mailgenie-template-select';
+    select.title = 'Select an email template';
+    
+    // Add placeholder option
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.text = '📂 Template';
+    select.appendChild(placeholder);
+
+    // Populate currently cached templates
+    cachedTemplates.forEach(tpl => {
+        const option = document.createElement('option');
+        option.value = tpl.body;
+        option.text = tpl.title;
+        if (tpl.body === defaultValue) {
             option.selected = true;
         }
         select.appendChild(option);
@@ -266,10 +331,56 @@ async function injectButton() {
         const button = createAIButton();
         const toneSelect = createToneSelect(settings.defaultTone);
         const langSelect = createLanguageSelect(settings.defaultLanguage);
+        const templateSelect = createTemplateSelect('');
 
         wrapper.appendChild(button);
         wrapper.appendChild(toneSelect);
         wrapper.appendChild(langSelect);
+        wrapper.appendChild(templateSelect);
+
+        // Fetch templates asynchronously if not done yet
+        if (!templatesFetched) {
+            fetchTemplates(settings.backendUrl).then(() => {
+                repopulateTemplateSelects();
+            });
+        }
+
+        templateSelect.addEventListener('change', () => {
+            const tplBody = templateSelect.value;
+            if (!tplBody) return;
+
+            const { box: composeBox } = findComposeBox(toolbar);
+            if (composeBox) {
+                composeBox.focus();
+                
+                try {
+                    const selection = window.getSelection();
+                    const range = document.createRange();
+                    range.selectNodeContents(composeBox);
+                    range.collapse(true);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                } catch (e) {
+                    console.warn(e);
+                }
+
+                let inserted = false;
+                try {
+                    inserted = document.execCommand('insertText', false, tplBody);
+                } catch (e) {
+                    console.warn(e);
+                }
+
+                if (!inserted) {
+                    composeBox.innerHTML = tplBody.replace(/\n/g, '<br>') + '<br><br>' + composeBox.innerHTML;
+                }
+
+                composeBox.dispatchEvent(new Event('input', { bubbles: true }));
+                composeBox.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            // Reset selection back to placeholder
+            templateSelect.value = '';
+        });
 
         button.addEventListener('click', async () => {
             const { box: composeBox, container: composeContainer } = findComposeBox(toolbar);
@@ -294,6 +405,7 @@ async function injectButton() {
                 button.disabled = true;
                 toneSelect.disabled = true;
                 langSelect.disabled = true;
+                templateSelect.disabled = true;
 
                 const selectedTone = toneSelect.value;
                 const selectedLanguage = langSelect.value;
@@ -382,6 +494,7 @@ async function injectButton() {
                 button.disabled = false;
                 toneSelect.disabled = false;
                 langSelect.disabled = false;
+                templateSelect.disabled = false;
             }
         });
 
@@ -422,3 +535,37 @@ const fallbackInterval = setInterval(() => {
     }
     injectButton();
 }, 1000);
+
+// Listen for settings changes to dynamically update injected dropdown selections
+if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+        if (areaName === 'local') {
+            chrome.storage.local.get({
+                backendUrl: 'http://localhost:8080',
+                provider: 'groq',
+                apiKey: '',
+                defaultTone: 'professional',
+                defaultLanguage: 'English',
+                customModel: ''
+            }, (settings) => {
+                // Update Tone dropdowns
+                document.querySelectorAll('.mailgenie-tone-select').forEach(select => {
+                    select.value = settings.defaultTone;
+                });
+                // Update Language dropdowns
+                document.querySelectorAll('.mailgenie-lang-select').forEach(select => {
+                    select.value = settings.defaultLanguage;
+                });
+                
+                // Clear template cache to force refetch with new backend URL if it changed
+                if (changes.backendUrl) {
+                    templatesFetched = false;
+                    cachedTemplates = [];
+                    fetchTemplates(settings.backendUrl).then(() => {
+                        repopulateTemplateSelects();
+                    });
+                }
+            });
+        }
+    });
+}
