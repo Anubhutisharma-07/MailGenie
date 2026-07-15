@@ -156,6 +156,48 @@ function getEmailContent(composeContainer) {
     return '';
 }
 
+function findComposeBox(toolbar) {
+    // 1. Try to find the closest common container for compose/reply
+    const containers = [
+        '[role="dialog"]',
+        '.AD',            // standard Gmail compose container
+        'form',
+        'table',
+        '.M9',            // compose container class
+        '.g3',            // thread/reply container
+        '.dw',            // main Gmail workspace container
+        'body'            // fallback to body
+    ];
+
+    for (const containerSelector of containers) {
+        const container = toolbar.closest(containerSelector);
+        if (container) {
+            // Find the contenteditable text area inside this container
+            const selectors = [
+                '[role="textbox"][contenteditable="true"]',
+                '[role="textbox"][g_editable="true"]',
+                '[contenteditable="true"]',
+                '.editable'
+            ];
+            for (const selector of selectors) {
+                const box = container.querySelector(selector);
+                if (box) {
+                    return { box, container };
+                }
+            }
+        }
+    }
+    
+    // 2. Global fallback (as last resort, find any active or first editable box)
+    const globalBox = document.querySelector('[role="textbox"][contenteditable="true"]') || 
+                      document.querySelector('[contenteditable="true"]');
+    if (globalBox) {
+        return { box: globalBox, container: document.body };
+    }
+    
+    return { box: null, container: null };
+}
+
 function findComposeToolbars() {
     const toolbars = new Set();
     
@@ -224,7 +266,7 @@ async function injectButton() {
         wrapper.appendChild(langSelect);
 
         button.addEventListener('click', async () => {
-            const composeContainer = toolbar.closest('table') || toolbar.closest('[role="dialog"]') || toolbar.closest('form') || toolbar.parentElement;
+            const { box: composeBox, container: composeContainer } = findComposeBox(toolbar);
             const emailContent = getEmailContent(composeContainer);
             if (!emailContent) {
                 alert('MailGenie: Could not find any original email content to reply to. Please open an email thread.');
@@ -261,13 +303,44 @@ async function injectButton() {
                 }
 
                 const generatedReply = await response.text();
-                const composeBox = composeContainer.querySelector('[role="textbox"][g_editable="true"]');
 
                 if (composeBox) {
                     composeBox.focus();
-                    document.execCommand('insertText', false, generatedReply);
+                    
+                    let inserted = false;
+                    try {
+                        inserted = document.execCommand('insertText', false, generatedReply);
+                    } catch (e) {
+                        console.warn('MailGenie: execCommand failed, falling back to Selection/Range API.', e);
+                    }
+                    
+                    if (!inserted) {
+                        try {
+                            const selection = window.getSelection();
+                            if (selection.rangeCount > 0) {
+                                const range = selection.getRangeAt(0);
+                                range.deleteContents();
+                                const textNode = document.createTextNode(generatedReply);
+                                range.insertNode(textNode);
+                                range.collapse(false);
+                                selection.removeAllRanges();
+                                selection.addRange(range);
+                                inserted = true;
+                            }
+                        } catch (selError) {
+                            console.error('MailGenie: Selection API insertion failed.', selError);
+                        }
+                    }
+                    
+                    if (!inserted) {
+                        composeBox.innerText = generatedReply;
+                    }
+                    
+                    // Dispatch change events to trigger Gmail's internal state updates
+                    composeBox.dispatchEvent(new Event('input', { bubbles: true }));
+                    composeBox.dispatchEvent(new Event('change', { bubbles: true }));
                 } else {
-                    console.error('MailGenie: Gmail compose textbox not found in container');
+                    console.error('MailGenie: Gmail compose textbox not found');
                     alert('MailGenie: Could not insert reply automatically. Copying generated draft to clipboard instead!');
                     navigator.clipboard.writeText(generatedReply);
                 }
