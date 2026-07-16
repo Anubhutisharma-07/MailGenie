@@ -10,5 +10,6 @@ public class EmailRequest {
     private String model;    // e.g., specific model name
     private String language; // e.g., "English", "Spanish", "French"
     private String apiKey;   // Optional API key passed from frontend
+    private boolean composeMode; // true if writing a new email, false/default if generating a reply
 }
 

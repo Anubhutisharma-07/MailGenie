@@ -1,6 +1,46 @@
 // MailGenie: Premium Gmail Integration Content Script
 console.log("MailGenie Extension - Content Script Loaded");
 
+let cachedTemplates = [];
+let templatesFetched = false;
+
+async function fetchTemplates(backendUrl) {
+    if (templatesFetched) return cachedTemplates;
+    try {
+        const cleanUrl = backendUrl.endsWith('/') ? backendUrl.slice(0, -1) : backendUrl;
+        const response = await fetch(`${cleanUrl}/api/templates`);
+        if (response.ok) {
+            cachedTemplates = await response.json();
+            templatesFetched = true;
+            console.log("MailGenie: Fetched templates from backend", cachedTemplates);
+        }
+    } catch (err) {
+        console.warn("MailGenie: Failed to fetch templates from backend", err);
+    }
+    return cachedTemplates;
+}
+
+function repopulateTemplateSelects() {
+    const selects = document.querySelectorAll('.mailgenie-template-select');
+    selects.forEach(select => {
+        const currentValue = select.value;
+        // Clear all except the first option (placeholder)
+        while (select.options.length > 1) {
+            select.remove(1);
+        }
+        // Populate new templates
+        cachedTemplates.forEach(tpl => {
+            const option = document.createElement('option');
+            option.value = tpl.body;
+            option.text = tpl.title;
+            if (tpl.body === currentValue) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+    });
+}
+
 // Load stored configurations with defaults, safely checking for API availability
 function getSettings() {
     return new Promise((resolve) => {
@@ -70,7 +110,7 @@ function createAIButton() {
 
 function createToneSelect(defaultValue) {
     const select = document.createElement('select');
-    select.className = 'mailgenie-select';
+    select.className = 'mailgenie-select mailgenie-tone-select';
     select.title = 'Select reply tone';
     
     const tones = [
@@ -98,7 +138,7 @@ function createToneSelect(defaultValue) {
 
 function createLanguageSelect(defaultValue) {
     const select = document.createElement('select');
-    select.className = 'mailgenie-select';
+    select.className = 'mailgenie-select mailgenie-lang-select';
     select.title = 'Select reply language';
 
     const languages = [
@@ -125,6 +165,31 @@ function createLanguageSelect(defaultValue) {
     return select;
 }
 
+function createTemplateSelect(defaultValue) {
+    const select = document.createElement('select');
+    select.className = 'mailgenie-select mailgenie-template-select';
+    select.title = 'Select an email template';
+    
+    // Add placeholder option
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.text = '📂 Template';
+    select.appendChild(placeholder);
+
+    // Populate currently cached templates
+    cachedTemplates.forEach(tpl => {
+        const option = document.createElement('option');
+        option.value = tpl.body;
+        option.text = tpl.title;
+        if (tpl.body === defaultValue) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    });
+
+    return select;
+}
+
 function getEmailContent(composeContainer) {
     // If the compose window is inline, try to find the email content nearby first.
     // Otherwise fall back to the standard global selectors.
@@ -139,21 +204,69 @@ function getEmailContent(composeContainer) {
         const threadContainer = composeContainer.closest('.g3') || composeContainer.closest('.dw');
         if (threadContainer) {
             for (const selector of selectors) {
-                const content = threadContainer.querySelector(selector);
-                if (content && content.innerText.trim()) {
-                    return content.innerText.trim();
+                const contents = threadContainer.querySelectorAll(selector);
+                if (contents.length > 0) {
+                    const latestContent = contents[contents.length - 1];
+                    if (latestContent && latestContent.innerText.trim()) {
+                        return latestContent.innerText.trim();
+                    }
                 }
             }
         }
     }
 
     for (const selector of selectors) {
-        const content = document.querySelector(selector);
-        if (content && content.innerText.trim()) {
-            return content.innerText.trim();
+        const contents = document.querySelectorAll(selector);
+        if (contents.length > 0) {
+            const latestContent = contents[contents.length - 1];
+            if (latestContent && latestContent.innerText.trim()) {
+                return latestContent.innerText.trim();
+            }
         }
     }
     return '';
+}
+
+function findComposeBox(toolbar) {
+    // 1. Try to find the closest common container for compose/reply
+    const containers = [
+        '[role="dialog"]',
+        '.AD',            // standard Gmail compose container
+        'form',
+        'table',
+        '.M9',            // compose container class
+        '.g3',            // thread/reply container
+        '.dw',            // main Gmail workspace container
+        'body'            // fallback to body
+    ];
+
+    for (const containerSelector of containers) {
+        const container = toolbar.closest(containerSelector);
+        if (container) {
+            // Find the contenteditable text area inside this container
+            const selectors = [
+                '[role="textbox"][contenteditable="true"]',
+                '[role="textbox"][g_editable="true"]',
+                '[contenteditable="true"]',
+                '.editable'
+            ];
+            for (const selector of selectors) {
+                const box = container.querySelector(selector);
+                if (box) {
+                    return { box, container };
+                }
+            }
+        }
+    }
+        
+    // 2. Global fallback (as last resort, find any active or first editable box)
+    const globalBox = document.querySelector('[role="textbox"][contenteditable="true"]') || 
+                      document.querySelector('[contenteditable="true"]');
+    if (globalBox) {
+        return { box: globalBox, container: document.body };
+    }
+        
+    return { box: null, container: null };
 }
 
 function findComposeToolbars() {
@@ -224,10 +337,81 @@ async function injectButton() {
         const button = createAIButton();
         const toneSelect = createToneSelect(settings.defaultTone);
         const langSelect = createLanguageSelect(settings.defaultLanguage);
+        const templateSelect = createTemplateSelect('');
 
         wrapper.appendChild(button);
         wrapper.appendChild(toneSelect);
         wrapper.appendChild(langSelect);
+        wrapper.appendChild(templateSelect);
+
+        // Fetch templates asynchronously if not done yet
+        if (!templatesFetched) {
+            fetchTemplates(settings.backendUrl).then(() => {
+                repopulateTemplateSelects();
+            });
+        }
+
+        templateSelect.addEventListener('change', () => {
+            const tplBody = templateSelect.value;
+            if (!tplBody) return;
+
+            const { box: composeBox } = findComposeBox(toolbar);
+            if (composeBox) {
+                composeBox.focus();
+                
+                try {
+                    const selection = window.getSelection();
+                    const range = document.createRange();
+                    range.selectNodeContents(composeBox);
+                    range.collapse(true);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                } catch (e) {
+                    console.warn(e);
+                }
+
+                let inserted = false;
+                try {
+                    inserted = document.execCommand('insertText', false, tplBody);
+                } catch (e) {
+                    console.warn(e);
+                }
+
+                if (!inserted) {
+                    try {
+                        const selection = window.getSelection();
+                        let range;
+                        if (selection.rangeCount > 0) {
+                            range = selection.getRangeAt(0);
+                        } else {
+                            range = document.createRange();
+                            range.selectNodeContents(composeBox);
+                            range.collapse(true);
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+                        }
+                        range.deleteContents();
+                        const textNode = document.createTextNode(tplBody);
+                        range.insertNode(textNode);
+                        range.collapse(false);
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                        inserted = true;
+                    } catch (selError) {
+                        console.error('MailGenie: Template Selection API insertion failed.', selError);
+                    }
+                }
+
+                if (!inserted) {
+                    composeBox.innerHTML = tplBody.replace(/\n/g, '<br>') + '<br><br>' + composeBox.innerHTML;
+                }
+
+                composeBox.dispatchEvent(new Event('input', { bubbles: true }));
+                composeBox.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            // Reset selection back to placeholder
+            templateSelect.value = '';
+        });
 
         button.addEventListener('click', async () => {
             // Guard: extension context may have been invalidated between renders
@@ -236,10 +420,20 @@ async function injectButton() {
                 return;
             }
 
-            const composeContainer = toolbar.closest('table') || toolbar.closest('[role="dialog"]') || toolbar.closest('form') || toolbar.parentElement;
-            const emailContent = getEmailContent(composeContainer);
+            const { box: composeBox, container: composeContainer } = findComposeBox(toolbar);
+            let emailContent = getEmailContent(composeContainer);
+            let isComposeMode = false;
+
             if (!emailContent) {
-                alert('MailGenie: Could not find any original email content to reply to. Please open an email thread.');
+                // Check if user has typed something in the compose box to use as instructions
+                if (composeBox && composeBox.innerText.trim()) {
+                    emailContent = composeBox.innerText.trim();
+                    isComposeMode = true;
+                }
+            }
+
+            if (!emailContent) {
+                alert('MailGenie: Please open an email thread to reply to, or type a brief instruction in the editor to generate a new email.');
                 return;
             }
 
@@ -248,6 +442,7 @@ async function injectButton() {
                 button.disabled = true;
                 toneSelect.disabled = true;
                 langSelect.disabled = true;
+                templateSelect.disabled = true;
 
                 const selectedTone = toneSelect.value;
                 const selectedLanguage = langSelect.value;
@@ -263,7 +458,8 @@ async function injectButton() {
                         provider: settings.provider,
                         model: settings.customModel,
                         language: selectedLanguage,
-                        apiKey: settings.apiKey // Pass custom API key to override backend setting if supplied
+                        apiKey: settings.apiKey, // Pass custom API key to override backend setting if supplied
+                        composeMode: isComposeMode
                     })
                 });
 
@@ -273,13 +469,64 @@ async function injectButton() {
                 }
 
                 const generatedReply = await response.text();
-                const composeBox = composeContainer.querySelector('[role="textbox"][g_editable="true"]');
 
                 if (composeBox) {
                     composeBox.focus();
-                    document.execCommand('insertText', false, generatedReply);
+                    
+                    // Collapse selection to start of the editor (before signatures/quotes)
+                    try {
+                        const selection = window.getSelection();
+                        const range = document.createRange();
+                        range.selectNodeContents(composeBox);
+                        range.collapse(true); // true collapses range to its start
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                    } catch (cursorError) {
+                        console.warn('MailGenie: Could not set cursor to start of composer', cursorError);
+                    }
+                    
+                    let inserted = false;
+                    try {
+                        inserted = document.execCommand('insertText', false, generatedReply);
+                    } catch (e) {
+                        console.warn('MailGenie: execCommand failed, falling back to Selection/Range API.', e);
+                    }
+                    
+                    if (!inserted) {
+                        try {
+                            const selection = window.getSelection();
+                            let range;
+                            if (selection.rangeCount > 0) {
+                                range = selection.getRangeAt(0);
+                            } else {
+                                range = document.createRange();
+                                range.selectNodeContents(composeBox);
+                                range.collapse(true);
+                                selection.removeAllRanges();
+                                selection.addRange(range);
+                            }
+                            range.deleteContents();
+                            const textNode = document.createTextNode(generatedReply);
+                            range.insertNode(textNode);
+                            range.collapse(false);
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+                            inserted = true;
+                        } catch (selError) {
+                            console.error('MailGenie: Selection API insertion failed.', selError);
+                        }
+                    }
+                    
+                    if (!inserted) {
+                        // Hard fallback: prepend generated email text to preserve signature/replies
+                        composeBox.innerHTML = generatedReply.replace(/\n/g, '<br>') + '<br><br>' + composeBox.innerHTML;
+                    }
+                    
+                    // Dispatch change events to trigger Gmail's internal state updates
+                    composeBox.dispatchEvent(new Event('input', { bubbles: true }));
+                    composeBox.dispatchEvent(new Event('change', { bubbles: true }));
                 } else {
-                    console.error('MailGenie: Gmail compose textbox not found in container');
+                    console.error('MailGenie: Gmail compose textbox not found');
                     alert('MailGenie: Could not insert reply automatically. Copying generated draft to clipboard instead!');
                     navigator.clipboard.writeText(generatedReply);
                 }
@@ -296,6 +543,7 @@ async function injectButton() {
                 button.disabled = false;
                 toneSelect.disabled = false;
                 langSelect.disabled = false;
+                templateSelect.disabled = false;
             }
         });
 
@@ -342,3 +590,37 @@ const fallbackInterval = setInterval(() => {
     }
     injectButton();
 }, 1000);
+
+// Listen for settings changes to dynamically update injected dropdown selections
+if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+        if (areaName === 'local') {
+            chrome.storage.local.get({
+                backendUrl: 'http://localhost:8080',
+                provider: 'groq',
+                apiKey: '',
+                defaultTone: 'professional',
+                defaultLanguage: 'English',
+                customModel: ''
+            }, (settings) => {
+                // Update Tone dropdowns
+                document.querySelectorAll('.mailgenie-tone-select').forEach(select => {
+                    select.value = settings.defaultTone;
+                });
+                // Update Language dropdowns
+                document.querySelectorAll('.mailgenie-lang-select').forEach(select => {
+                    select.value = settings.defaultLanguage;
+                });
+                
+                // Clear template cache to force refetch with new backend URL if it changed
+                if (changes.backendUrl) {
+                    templatesFetched = false;
+                    cachedTemplates = [];
+                    fetchTemplates(settings.backendUrl).then(() => {
+                        repopulateTemplateSelects();
+                    });
+                }
+            });
+        }
+    });
+}
