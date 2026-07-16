@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import './App.css';
+import Footer from './components/Footer';
+import AboutPage from './pages/AboutPage';
+
 import { 
   Box, 
   Button, 
@@ -1121,6 +1124,27 @@ function App() {
               </Box>
             )}
 
+            {activeTab === 'about' && (
+              <AboutPage onBack={() => setActiveTab('generator')} />
+            )}
+
+            {['contact', 'guidelines', 'help', 'terms', 'privacy', 'security', 'blog', 'careers', 'guides'].includes(activeTab) && activeTab !== 'about' && (
+              <Box sx={{ py: 6, textAlign: 'center' }}>
+                <Paper className="glass-card" sx={{ p: 6, maxWidth: 600, mx: 'auto' }}>
+                  <Typography variant="h4" gutterBottom className="app-title">
+                    🚧 Page Under Construction
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+                    The <strong>{activeTab.toUpperCase()}</strong> page is currently being designed and will be implemented in the next phase.
+                  </Typography>
+                  <Button variant="contained" className="gradient-btn" onClick={() => setActiveTab('generator')}>
+                    Back to Generator
+                  </Button>
+                </Paper>
+              </Box>
+            )}
+
+            <Footer onNavigate={(page) => setActiveTab(page)} />
           </Container>
         </Box>
       </Box>
