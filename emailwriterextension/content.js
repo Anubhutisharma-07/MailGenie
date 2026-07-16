@@ -258,14 +258,14 @@ function findComposeBox(toolbar) {
             }
         }
     }
-    
+        
     // 2. Global fallback (as last resort, find any active or first editable box)
     const globalBox = document.querySelector('[role="textbox"][contenteditable="true"]') || 
                       document.querySelector('[contenteditable="true"]');
     if (globalBox) {
         return { box: globalBox, container: document.body };
     }
-    
+        
     return { box: null, container: null };
 }
 
@@ -297,8 +297,14 @@ function findComposeToolbars() {
 }
 
 async function injectButton() {
-    // Check if context is invalidated
-    if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.id) {
+    // Check if context is invalidated before doing any work
+    try {
+        if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.id) {
+            return;
+        }
+        // Accessing chrome.runtime.id throws if context is invalidated
+        void chrome.runtime.id;
+    } catch (e) {
         return;
     }
 
@@ -392,7 +398,7 @@ async function injectButton() {
                         selection.addRange(range);
                         inserted = true;
                     } catch (selError) {
-                        console.error('MailGenie: Selection API template insertion failed.', selError);
+                        console.error('MailGenie: Template Selection API insertion failed.', selError);
                     }
                 }
 
@@ -408,6 +414,12 @@ async function injectButton() {
         });
 
         button.addEventListener('click', async () => {
+            // Guard: extension context may have been invalidated between renders
+            try { void chrome.runtime.id; } catch (e) {
+                alert('MailGenie: Extension was reloaded. Please refresh this Gmail tab to continue.');
+                return;
+            }
+
             const { box: composeBox, container: composeContainer } = findComposeBox(toolbar);
             let emailContent = getEmailContent(composeContainer);
             let isComposeMode = false;
@@ -519,8 +531,13 @@ async function injectButton() {
                     navigator.clipboard.writeText(generatedReply);
                 }
             } catch (error) {
-                console.error('MailGenie Error:', error);
-                alert(`MailGenie: Failed to generate reply. Details: ${error.message}`);
+                // Distinguish network errors (backend offline) from extension context errors
+                if (error.message && error.message.toLowerCase().includes('failed to fetch')) {
+                    alert(`MailGenie: Backend is unreachable at ${settings.backendUrl}. Please ensure your Spring Boot server is running.`);
+                } else {
+                    console.error('MailGenie Error:', error);
+                    alert(`MailGenie: Failed to generate reply. Details: ${error.message}`);
+                }
             } finally {
                 button.innerHTML = '✨ AI Reply';
                 button.disabled = false;
@@ -538,10 +555,16 @@ async function injectButton() {
 // Observe Gmail DOM mutations with debounce/throttling to handle dynamic compose rendering
 let injectTimeout = null;
 const observer = new MutationObserver(() => {
-    // Graceful invalidation check: stop observer if extension context is invalidated
+    // Graceful invalidation check: stop observer silently if extension context is invalidated
+    try {
+        void chrome.runtime.id;
+    } catch (e) {
+        observer.disconnect();
+        return;
+    }
+
     if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.id) {
         observer.disconnect();
-        console.log("MailGenie: Context invalidated, disconnected MutationObserver.");
         return;
     }
 

@@ -4,27 +4,29 @@ import Footer from './components/Footer';
 import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 import GuidelinesPage from './pages/GuidelinesPage';
+import HelpPage from './pages/HelpPage';
+import TermsPage from './pages/TermsPage';
+import PrivacyPage from './pages/PrivacyPage';
+import SecurityPage from './pages/SecurityPage';
 
-
-
-import { 
-  Box, 
-  Button, 
-  CircularProgress, 
-  Container, 
-  FormControl, 
-  InputLabel, 
-  MenuItem, 
-  Select, 
-  TextField, 
-  Typography, 
-  Paper, 
-  Card, 
-  CardContent, 
-  Divider, 
-  IconButton, 
-  Switch, 
-  FormControlLabel, 
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Container,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  TextField,
+  Typography,
+  Paper,
+  Card,
+  CardContent,
+  Divider,
+  IconButton,
+  Switch,
+  FormControlLabel,
   Grid,
   InputAdornment,
   Drawer,
@@ -67,7 +69,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
-  
+
   // History and config states
   const [historyList, setHistoryList] = useState([]);
   const [editingId, setEditingId] = useState(null);
@@ -76,7 +78,14 @@ function App() {
   const [providerConfig, setProviderConfig] = useState({ groq: false, openai: false, gemini: false, claude: false });
 
   // Custom and preset templates
-  const [customTemplates, setCustomTemplates] = useState([]);
+  const [customTemplates, setCustomTemplates] = useState(() => {
+    const saved = localStorage.getItem('mailgenie_custom_templates');
+    return saved ? JSON.parse(saved) : [
+      { id: 'p1', title: '💼 Professional Follow-up', body: 'Dear [Name],\n\nI wanted to follow up on our discussion regarding [Topic]. Please let me know if you have had a chance to review the details.\n\nBest regards,\n[Your Name]' },
+      { id: 'p2', title: '📅 Schedule Meeting', body: 'Hi [Name],\n\nI would love to schedule a quick 15-minute call to align on our next steps. Please let me know your availability this week.\n\nThanks,\n[Your Name]' },
+      { id: 'p3', title: '☕ Casual Check-in', body: 'Hey [Name],\n\nHope you are doing well! Just wanted to check in and see how things are going with [Project]. Let me know when you are free to catch up.\n\nCheers,\n[Your Name]' }
+    ];
+  });
 
   const [newTemplateTitle, setNewTemplateTitle] = useState('');
   const [newTemplateBody, setNewTemplateBody] = useState('');
@@ -148,7 +157,7 @@ function App() {
       const response = await axios.get(`${backendUrl}/api/email/config`);
       setProviderConfig(response.data);
       setBackendOnline(true);
-      
+
       // Auto select first configured provider
       if (response.data) {
         if (response.data.groq) setProvider('groq');
@@ -160,19 +169,9 @@ function App() {
       // Fetch history if online
       const historyResponse = await axios.get(`${backendUrl}/api/history`);
       setHistoryList(historyResponse.data);
-
-      // Fetch templates from backend API if online
-      const templatesResponse = await axios.get(`${backendUrl}/api/templates`);
-      setCustomTemplates(templatesResponse.data);
     } catch (err) {
       console.error("Backend health check failed:", err);
       setBackendOnline(false);
-      
-      // Fallback: load templates from localStorage if backend is offline
-      const saved = localStorage.getItem('mailgenie_custom_templates');
-      if (saved) {
-        setCustomTemplates(JSON.parse(saved));
-      }
     }
   };
 
@@ -196,7 +195,7 @@ function App() {
       });
       const reply = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
       setGeneratedReply(reply);
-      
+
       // Refresh history list
       const histRes = await axios.get(`${backendUrl}/api/history`);
       setHistoryList(histRes.data);
@@ -238,55 +237,25 @@ function App() {
   };
 
   // Templates CRUD
-  const handleAddTemplate = async () => {
+  const handleAddTemplate = () => {
     if (!newTemplateTitle.trim() || !newTemplateBody.trim()) return;
-    
     const newTpl = {
+      id: Date.now().toString(),
       title: newTemplateTitle,
       body: newTemplateBody
     };
-
-    if (backendOnline) {
-      try {
-        const response = await axios.post(`${backendUrl}/api/templates`, newTpl);
-        setCustomTemplates(prev => [response.data, ...prev]);
-        setNewTemplateTitle('');
-        setNewTemplateBody('');
-      } catch (err) {
-        console.error("Failed to save template to backend:", err);
-        alert("Failed to save template to backend.");
-      }
-    } else {
-      // Fallback to localStorage
-      const localTpl = {
-        id: Date.now().toString(),
-        title: newTemplateTitle,
-        body: newTemplateBody
-      };
-      const updated = [localTpl, ...customTemplates];
-      setCustomTemplates(updated);
-      localStorage.setItem('mailgenie_custom_templates', JSON.stringify(updated));
-      setNewTemplateTitle('');
-      setNewTemplateBody('');
-    }
+    const updated = [...customTemplates, newTpl];
+    setCustomTemplates(updated);
+    localStorage.setItem('mailgenie_custom_templates', JSON.stringify(updated));
+    setNewTemplateTitle('');
+    setNewTemplateBody('');
   };
 
-  const handleDeleteTemplate = async (id) => {
+  const handleDeleteTemplate = (id) => {
     if (window.confirm("Delete this template?")) {
-      if (backendOnline && typeof id === 'number') {
-        try {
-          await axios.delete(`${backendUrl}/api/templates/${id}`);
-          setCustomTemplates(prev => prev.filter(t => t.id !== id));
-        } catch (err) {
-          console.error("Failed to delete template from backend:", err);
-          alert("Failed to delete template.");
-        }
-      } else {
-        // LocalStorage fallback (id is string for local templates)
-        const updated = customTemplates.filter(t => t.id !== id);
-        setCustomTemplates(updated);
-        localStorage.setItem('mailgenie_custom_templates', JSON.stringify(updated));
-      }
+      const updated = customTemplates.filter(t => t.id !== id);
+      setCustomTemplates(updated);
+      localStorage.setItem('mailgenie_custom_templates', JSON.stringify(updated));
     }
   };
 
@@ -353,17 +322,17 @@ function App() {
           AI EMAIL WRITING SUITE
         </Typography>
       </Box>
-      
+
       <List sx={{ px: 2, py: 3, flexGrow: 1 }}>
         {navigationItems.map((item) => (
           <ListItem key={item.id} disablePadding sx={{ mb: 1 }}>
-            <ListItemButton 
+            <ListItemButton
               onClick={() => {
                 setActiveTab(item.id);
                 if (isMobile) setMobileOpen(false);
               }}
               className={activeTab === item.id ? "sidebar-item-active" : "sidebar-item"}
-              sx={{ 
+              sx={{
                 borderRadius: '12px',
                 py: 1.5,
                 px: 2,
@@ -373,8 +342,8 @@ function App() {
               <ListItemIcon sx={{ minWidth: 36, fontSize: '1.2rem' }}>
                 {item.icon}
               </ListItemIcon>
-              <ListItemText 
-                primary={item.label} 
+              <ListItemText
+                primary={item.label}
                 primaryTypographyProps={{ fontSize: '0.95rem', fontWeight: activeTab === item.id ? 700 : 500 }}
               />
             </ListItemButton>
@@ -402,10 +371,10 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-        
+
         {/* Responsive Mobile Drawer */}
         {isMobile && (
-          <IconButton 
+          <IconButton
             onClick={() => setMobileOpen(true)}
             sx={{ position: 'fixed', top: 16, left: 16, zIndex: 1100, bgcolor: 'background.paper', boxShadow: 1 }}
           >
@@ -420,8 +389,8 @@ function App() {
           sx={{
             width: drawerWidth,
             flexShrink: 0,
-            [`& .MuiDrawer-paper`]: { 
-              width: drawerWidth, 
+            [`& .MuiDrawer-paper`]: {
+              width: drawerWidth,
               boxSizing: 'border-box',
               borderRight: '1px solid rgba(255, 255, 255, 0.08)',
               background: isDarkMode ? 'linear-gradient(180deg, #090d16 0%, #0e1628 100%)' : '#ffffff'
@@ -434,7 +403,7 @@ function App() {
         {/* Main Content Area */}
         <Box component="main" sx={{ flexGrow: 1, p: 4, width: { md: `calc(100% - ${drawerWidth}px)` }, pt: isMobile ? 8 : 4 }}>
           <Container maxWidth="lg">
-            
+
             {/* TAB: GENERATOR */}
             {activeTab === 'generator' && (
               <Box>
@@ -452,30 +421,8 @@ function App() {
                   <Grid item xs={12} md={7}>
                     <Paper className="glass-card" sx={{ p: 4 }}>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                        
-                        {customTemplates.length > 0 && (
-                          <FormControl fullWidth size="small">
-                            <InputLabel id="quick-template-label">📂 Quick Insert Template</InputLabel>
-                            <Select
-                              labelId="quick-template-label"
-                              value=""
-                              label="Quick Insert Template"
-                              onChange={(e) => {
-                                if (e.target.value) {
-                                  setEmailContent(e.target.value);
-                                }
-                              }}
-                            >
-                              {customTemplates.map((t) => (
-                                <MenuItem key={t.id || t.title} value={t.body}>
-                                  {t.title}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-                        )}
 
-                        <TextField 
+                        <TextField
                           fullWidth
                           multiline
                           rows={6}
@@ -602,7 +549,7 @@ function App() {
                         ✨ Generated Reply Draft
                       </Typography>
                       <Divider sx={{ my: 2 }} />
-                      
+
                       {generatedReply ? (
                         <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
                           <TextField
@@ -612,7 +559,7 @@ function App() {
                             variant='outlined'
                             value={generatedReply}
                             inputProps={{ readOnly: true }}
-                            sx={{ 
+                            sx={{
                               backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.25)' : '#f8fafc',
                               borderRadius: 3,
                               flexGrow: 1
@@ -698,9 +645,9 @@ function App() {
                               {new Date(item.createdAt).toLocaleString()}
                             </Typography>
                           </Box>
-                          <IconButton 
-                            color="error" 
-                            size="small" 
+                          <IconButton
+                            color="error"
+                            size="small"
                             onClick={() => handleDeleteHistory(item.id)}
                             title="Delete entry"
                           >
@@ -711,14 +658,14 @@ function App() {
                         <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
                           ✉️ Original Context:
                         </Typography>
-                        <Typography variant="body2" sx={{ 
-                          whiteSpace: 'pre-wrap', 
-                          backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : '#f8fafc', 
-                          p: 2, 
-                          borderRadius: 2.5, 
-                          mb: 2, 
+                        <Typography variant="body2" sx={{
+                          whiteSpace: 'pre-wrap',
+                          backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : '#f8fafc',
+                          p: 2,
+                          borderRadius: 2.5,
+                          mb: 2,
                           color: 'text.secondary',
-                          fontSize: '0.85rem' 
+                          fontSize: '0.85rem'
                         }}>
                           {item.originalContent}
                         </Typography>
@@ -726,12 +673,12 @@ function App() {
                         <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main', mb: 0.5 }}>
                           🤖 AI Reply Draft:
                         </Typography>
-                        <Typography variant="body2" sx={{ 
-                          whiteSpace: 'pre-wrap', 
-                          backgroundColor: isDarkMode ? 'rgba(99, 102, 241, 0.08)' : '#eef2ff', 
-                          p: 2, 
-                          borderRadius: 2.5, 
-                          mb: 2, 
+                        <Typography variant="body2" sx={{
+                          whiteSpace: 'pre-wrap',
+                          backgroundColor: isDarkMode ? 'rgba(99, 102, 241, 0.08)' : '#eef2ff',
+                          p: 2,
+                          borderRadius: 2.5,
+                          mb: 2,
                           color: 'text.primary',
                           fontSize: '0.85rem'
                         }}>
@@ -798,7 +745,7 @@ function App() {
                       </Typography>
                       <Divider sx={{ my: 2 }} />
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                        <TextField 
+                        <TextField
                           fullWidth
                           size="small"
                           label="Template Title"
@@ -806,7 +753,7 @@ function App() {
                           value={newTemplateTitle}
                           onChange={(e) => setNewTemplateTitle(e.target.value)}
                         />
-                        <TextField 
+                        <TextField
                           fullWidth
                           multiline
                           rows={6}
@@ -815,8 +762,8 @@ function App() {
                           value={newTemplateBody}
                           onChange={(e) => setNewTemplateBody(e.target.value)}
                         />
-                        <Button 
-                          variant="contained" 
+                        <Button
+                          variant="contained"
                           onClick={handleAddTemplate}
                           disabled={!newTemplateTitle || !newTemplateBody}
                           fullWidth
@@ -839,19 +786,19 @@ function App() {
                                 <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 700 }}>
                                   {template.title}
                                 </Typography>
-                                <IconButton 
-                                  size="small" 
-                                  color="error" 
+                                <IconButton
+                                  size="small"
+                                  color="error"
                                   onClick={() => handleDeleteTemplate(template.id)}
                                 >
                                   🗑️
                                 </IconButton>
                               </Box>
-                              <Typography 
-                                variant="body2" 
-                                sx={{ 
-                                  color: 'text.secondary', 
-                                  whiteSpace: 'pre-wrap', 
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  color: 'text.secondary',
+                                  whiteSpace: 'pre-wrap',
                                   mb: 2.5,
                                   fontSize: '0.82rem',
                                   overflow: 'hidden',
@@ -863,10 +810,10 @@ function App() {
                               >
                                 {template.body}
                               </Typography>
-                              <Button 
-                                variant="outlined" 
-                                size="small" 
-                                fullWidth 
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                fullWidth
                                 onClick={() => handleUseTemplate(template.body)}
                                 sx={{ textTransform: 'none', borderRadius: 2 }}
                               >
@@ -909,7 +856,7 @@ function App() {
                       </Typography>
                     </Paper>
                   </Grid>
-                  
+
                   <Grid item xs={12} sm={6} md={3}>
                     <Paper className="glass-card" sx={{ p: 3, textAlign: 'center' }}>
                       <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 700 }}>
@@ -962,7 +909,7 @@ function App() {
                         🤖 LLM Provider Usage Distribution
                       </Typography>
                       <Divider sx={{ my: 2 }} />
-                      
+
                       {totalGenerated > 0 ? (
                         <Box sx={{ mt: 4, display: 'flex', flexDirection: 'column', gap: 3 }}>
                           {['groq', 'openai', 'gemini', 'claude'].map(p => {
@@ -979,14 +926,14 @@ function App() {
                                   </Typography>
                                 </Box>
                                 <Box sx={{ width: '100%', height: 12, bgcolor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : '#e2e8f0', borderRadius: 6, overflow: 'hidden' }}>
-                                  <Box 
-                                    sx={{ 
-                                      width: `${pct}%`, 
-                                      height: '100%', 
+                                  <Box
+                                    sx={{
+                                      width: `${pct}%`,
+                                      height: '100%',
                                       background: p === 'groq' ? '#f55036' : p === 'openai' ? '#10a37f' : p === 'gemini' ? '#1a73e8' : '#d97706',
                                       borderRadius: 6,
                                       transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
-                                    }} 
+                                    }}
                                   />
                                 </Box>
                               </Box>
@@ -1065,7 +1012,7 @@ function App() {
                       <Divider sx={{ my: 2 }} />
 
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                        <TextField 
+                        <TextField
                           fullWidth
                           label="Spring Boot Server URL"
                           value={backendUrl}
@@ -1087,8 +1034,8 @@ function App() {
                           </span>
                         </Box>
 
-                        <Button 
-                          variant="outlined" 
+                        <Button
+                          variant="outlined"
                           onClick={checkBackendHealth}
                           fullWidth
                           sx={{ py: 1.2, borderRadius: 2 }}
@@ -1140,7 +1087,23 @@ function App() {
               <GuidelinesPage onBack={() => setActiveTab('generator')} />
             )}
 
-            {['help', 'terms', 'privacy', 'security', 'blog', 'careers', 'guides'].includes(activeTab) && activeTab !== 'about' && activeTab !== 'contact' && activeTab !== 'guidelines' && (
+            {activeTab === 'help' && (
+              <HelpPage onBack={() => setActiveTab('generator')} />
+            )}
+
+            {activeTab === 'terms' && (
+              <TermsPage onBack={() => setActiveTab('generator')} />
+            )}
+
+            {activeTab === 'privacy' && (
+              <PrivacyPage onBack={() => setActiveTab('generator')} />
+            )}
+
+            {activeTab === 'security' && (
+              <SecurityPage onBack={() => setActiveTab('generator')} />
+            )}
+
+            {['blog', 'careers', 'guides'].includes(activeTab) && (
               <Box sx={{ py: 6, textAlign: 'center' }}>
                 <Paper className="glass-card" sx={{ p: 6, maxWidth: 600, mx: 'auto' }}>
                   <Typography variant="h4" gutterBottom className="app-title">
