@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import './App.css';
 import Footer from './components/Footer';
 import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
+
 
 import { 
   Box, 
@@ -1128,7 +1130,11 @@ function App() {
               <AboutPage onBack={() => setActiveTab('generator')} />
             )}
 
-            {['contact', 'guidelines', 'help', 'terms', 'privacy', 'security', 'blog', 'careers', 'guides'].includes(activeTab) && activeTab !== 'about' && (
+            {activeTab === 'contact' && (
+              <ContactPage onBack={() => setActiveTab('generator')} />
+            )}
+
+            {['guidelines', 'help', 'terms', 'privacy', 'security', 'blog', 'careers', 'guides'].includes(activeTab) && activeTab !== 'about' && activeTab !== 'contact' && (
               <Box sx={{ py: 6, textAlign: 'center' }}>
                 <Paper className="glass-card" sx={{ p: 6, maxWidth: 600, mx: 'auto' }}>
                   <Typography variant="h4" gutterBottom className="app-title">
