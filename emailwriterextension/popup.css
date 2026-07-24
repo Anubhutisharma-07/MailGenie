@@ -1,13 +1,18 @@
-/* MailGenie Options Popup Stylesheet */
+/* MailGenie Options & Diagnostic Popup Stylesheet v1.1.0 */
 
 :root {
-  --bg-color: #0b0f19;
+  --bg-color: #0f172a;
   --card-bg: #1e293b;
+  --input-bg: #0f172a;
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --accent-color: #6366f1;
+  --accent-hover: #4f46e5;
   --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-  --border-color: rgba(255, 255, 255, 0.08);
+  --border-color: rgba(255, 255, 255, 0.1);
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --error-color: #ef4444;
 }
 
 body {
@@ -16,31 +21,38 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   background-color: var(--bg-color);
   color: var(--text-primary);
-  width: 320px;
+  width: 360px;
+  min-height: 480px;
 }
 
 .popup-container {
   padding: 16px;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Header */
+/* Header & Tabs */
 .header {
-  text-align: center;
-  margin-bottom: 16px;
   border-bottom: 1px solid var(--border-color);
   padding-bottom: 12px;
+  margin-bottom: 14px;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
 .logo {
-  font-size: 28px;
-  display: block;
-  margin-bottom: 4px;
+  font-size: 26px;
 }
 
 .title {
   margin: 0;
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
   background: var(--accent-gradient);
   -webkit-background-clip: text;
@@ -52,95 +64,255 @@ body {
   color: var(--text-secondary);
 }
 
-/* Form Container */
-.form-container {
+.tab-nav {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
+  gap: 4px;
+  background-color: var(--card-bg);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
 }
 
+.tab-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-btn.active {
+  background-color: var(--accent-color);
+  color: #ffffff;
+}
+
+.tab-content {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tab-content.active {
+  display: flex;
+}
+
+/* Form Controls */
 .form-group {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
+.row-group {
+  flex-direction: row;
+  gap: 8px;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
 label {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 700;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-input[type="text"], select {
-  background-color: var(--card-bg);
+input[type="text"],
+input[type="password"],
+select,
+textarea {
+  background-color: var(--input-bg);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
   border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 13px;
+  padding: 8px 10px;
+  font-size: 12px;
   outline: none;
   transition: all 0.2s ease;
+  font-family: inherit;
 }
 
-input[type="text"]:focus, select:focus {
+textarea {
+  resize: vertical;
+}
+
+input:focus, select:focus, textarea:focus {
   border-color: var(--accent-color);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
 }
 
-/* Save Button */
+/* Buttons */
 .btn {
   background: var(--accent-gradient);
   color: #ffffff;
   border: none;
   border-radius: 8px;
-  padding: 10px;
-  font-size: 13px;
+  padding: 9px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   box-shadow: 0 4px 10px rgba(99, 102, 241, 0.25);
   transition: all 0.2s ease;
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 .btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 14px rgba(99, 102, 241, 0.35);
-  filter: brightness(1.05);
 }
 
-.btn:active {
-  transform: translateY(0);
+.btn-secondary {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  box-shadow: none;
 }
 
-/* Save Status Message */
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--accent-color);
+  color: var(--text-primary);
+  box-shadow: none;
+}
+
+.btn-outline:hover {
+  background: rgba(99, 102, 241, 0.15);
+}
+
+/* Status Messages & Badges */
 .status-msg {
   background-color: rgba(16, 185, 129, 0.15);
   color: #34d399;
   border: 1px solid rgba(16, 185, 129, 0.3);
-  font-size: 12px;
+  font-size: 11px;
   padding: 8px;
   border-radius: 6px;
   text-align: center;
-  transition: all 0.3s ease;
 }
 
 .hide {
   display: none;
-  opacity: 0;
 }
 
-/* Footer & Live Server Indicator */
-.footer {
-  margin-top: 16px;
-  border-top: 1px solid var(--border-color);
-  padding-top: 12px;
+.section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 4px;
+}
+
+.margin-top-md {
+  margin-top: 10px;
+}
+
+/* Template Cards */
+.templates-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.empty-state {
   font-size: 11px;
   color: var(--text-secondary);
+  font-style: italic;
+  text-align: center;
+  padding: 12px;
+}
+
+.template-item-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.template-item-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 4px;
+}
+
+.template-item-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.delete-tpl-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.delete-tpl-btn:hover {
+  color: var(--error-color);
+}
+
+.template-item-body {
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Diagnostics Tab */
+.diag-card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.diag-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.stat-value {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.provider-status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.provider-status-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  background-color: var(--card-bg);
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
 }
 
 .status-indicator {
@@ -148,9 +320,55 @@ input[type="text"]:focus, select:focus {
 }
 
 .status-online {
-  color: #10b981;
+  color: var(--success-color);
 }
 
 .status-offline {
-  color: #f55036;
+  color: var(--error-color);
+}
+
+/* Footer */
+.footer {
+  margin-top: 14px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 10px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.footer-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.footer-dot.online {
+  background-color: var(--success-color);
+}
+
+.footer-dot.offline {
+  background-color: var(--error-color);
+}
+
+.footer-dot.checking {
+  background-color: var(--warning-color);
+}
+
+.footer-link {
+  color: var(--accent-color);
+  text-decoration: none;
+}
+
+.footer-link:hover {
+  text-underline-position: under;
+  text-decoration: underline;
 }

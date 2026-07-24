@@ -1,13 +1,22 @@
 {
   "name": "MailGenie - AI Email Writer",
-  "description": "AI-powered email reply generator for Gmail",
-  "version": "1.0",
+  "description": "AI-powered email reply generator and template engine for Gmail",
+  "version": "1.1.0",
   "manifest_version": 3,
-  "permissions": ["activeTab", "storage"],
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
   "host_permissions": [
     "http://localhost:8080/*",
+    "http://127.0.0.1:8080/*",
+    "https://*/*",
     "*://mail.google.com/*"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
       "js": ["content.js"],
@@ -23,7 +32,7 @@
     "128": "icons/icon128.png"
   },
   "action": {
-    "default_title": "MailGenie Settings",
+    "default_title": "MailGenie Settings & Templates",
     "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
