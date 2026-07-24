@@ -54,7 +54,8 @@ MailGenie is a local-first, zero-trust, AI-powered email productivity suite cons
 
 *   🧠 **Spring Boot Backend**: A highly performant reactive server written in Java 17+ that interfaces with the Groq LPU inference API (using models like Llama 3.3 70B). It manages reply generation, customizable templates, and analytics auditing data.
 *   ⚛️ **React Frontend**: A premium, glassmorphic standalone dashboard featuring real-time response time charting, a rich templates manager, connection configurations, and legal compliance pages.
-*   🧩 **Chrome Extension (Manifest V3)**: A lightweight browser extension that injects tone, language, and template selectors alongside an **"AI Reply"** button directly into Gmail's compose and reply toolbars. It parses incoming email threads on-the-fly and automatically inserts generated drafts.
+*   🧩 **Chrome Extension (Manifest V3 Service Worker)**: A robust browser extension built with a background service worker to prevent CORS and HTTPS-to-HTTP mixed content restrictions. It injects tone, language, and template selectors alongside an **"AI Reply"** button and Floating Action Widget directly into Gmail's compose and reply toolbars.
+
 
 ```
 📧 Open Gmail thread or compose box

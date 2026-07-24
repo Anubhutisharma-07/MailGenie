@@ -4,29 +4,40 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="popup.css">
-  <title>MailGenie Settings</title>
+  <title>MailGenie Control Center</title>
 </head>
 <body>
   <div class="popup-container">
     <header class="header">
-      <span class="logo">💌</span>
-      <h1 class="title">MailGenie</h1>
-      <span class="subtitle">AI Extension Settings</span>
+      <div class="header-brand">
+        <span class="logo">💌</span>
+        <div>
+          <h1 class="title">MailGenie AI</h1>
+          <span class="subtitle">Email Generator & Template Engine v1.1</span>
+        </div>
+      </div>
+
+      <nav class="tab-nav">
+        <button class="tab-btn active" data-tab="tab-settings">⚙️ Settings</button>
+        <button class="tab-btn" data-tab="tab-templates">📂 Templates</button>
+        <button class="tab-btn" data-tab="tab-diagnostics">⚡ Diagnostics</button>
+      </nav>
     </header>
 
-    <main class="form-container">
+    <!-- Tab 1: Settings -->
+    <main id="tab-settings" class="tab-content active">
       <div class="form-group">
-        <label for="backendUrl">Backend API URL</label>
+        <label for="backendUrl">Backend API Server URL</label>
         <input type="text" id="backendUrl" placeholder="http://localhost:8080" />
       </div>
 
       <div class="form-group">
         <label for="provider">Default AI Provider</label>
         <select id="provider">
-          <option value="groq">⚡ Groq LPU</option>
-          <option value="openai">🧠 OpenAI GPT</option>
-          <option value="gemini">♊ Google Gemini</option>
-          <option value="claude">🦉 Anthropic Claude</option>
+          <option value="groq">⚡ Groq LPU (Fastest)</option>
+          <option value="openai">🧠 OpenAI GPT-4o / 3.5</option>
+          <option value="gemini">♊ Google Gemini Flash</option>
+          <option value="claude">🦉 Anthropic Claude 3.5</option>
         </select>
       </div>
 
@@ -35,48 +46,94 @@
         <input type="password" id="apiKey" placeholder="Overrides backend key" />
       </div>
 
-      <div class="form-group">
-        <label for="defaultTone">Default Tone</label>
-        <select id="defaultTone">
-          <option value="">Default Tone</option>
-          <option value="professional">👔 Professional</option>
-          <option value="casual">☕ Casual</option>
-          <option value="friendly">😊 Friendly</option>
-          <option value="persuasive">🎯 Persuasive</option>
-          <option value="urgent">⏰ Urgent</option>
-          <option value="empathetic">❤️ Empathetic</option>
-        </select>
+      <div class="form-group row-group">
+        <div class="form-group flex-1">
+          <label for="defaultTone">Default Tone</label>
+          <select id="defaultTone">
+            <option value="professional">👔 Professional</option>
+            <option value="casual">☕ Casual</option>
+            <option value="friendly">😊 Friendly</option>
+            <option value="persuasive">🎯 Persuasive</option>
+            <option value="urgent">⏰ Urgent</option>
+            <option value="empathetic">❤️ Empathetic</option>
+          </select>
+        </div>
+
+        <div class="form-group flex-1">
+          <label for="defaultLanguage">Default Language</label>
+          <select id="defaultLanguage">
+            <option value="English">English 🇺🇸</option>
+            <option value="Spanish">Spanish 🇪🇸</option>
+            <option value="French">French 🇫🇷</option>
+            <option value="German">German 🇩🇪</option>
+            <option value="Italian">Italian 🇮🇹</option>
+            <option value="Japanese">Japanese 🇯🇵</option>
+            <option value="Chinese">Chinese 🇨🇳</option>
+            <option value="Hindi">Hindi 🇮🇳</option>
+          </select>
+        </div>
       </div>
 
       <div class="form-group">
-        <label for="defaultLanguage">Default Language</label>
-        <select id="defaultLanguage">
-          <option value="English">English 🇺🇸</option>
-          <option value="Spanish">Spanish 🇪🇸</option>
-          <option value="French">French 🇫🇷</option>
-          <option value="German">German 🇩🇪</option>
-          <option value="Italian">Italian 🇮🇹</option>
-          <option value="Japanese">Japanese 🇯🇵</option>
-          <option value="Chinese">Chinese 🇨🇳</option>
-          <option value="Hindi">Hindi 🇮🇳</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="customModel">Custom Model Name (Optional)</label>
-        <input type="text" id="customModel" placeholder="e.g. gpt-4o-mini" />
+        <label for="customModel">Custom Model Identifier (Optional)</label>
+        <input type="text" id="customModel" placeholder="e.g. llama-3.3-70b-versatile, gpt-4o-mini" />
       </div>
 
       <button id="saveBtn" class="btn">Save Configuration</button>
-      
+
       <div id="status" class="status-msg hide">
         Configuration saved successfully!
       </div>
     </main>
 
+    <!-- Tab 2: Custom Templates Manager -->
+    <main id="tab-templates" class="tab-content">
+      <div class="section-title">Add Custom Template</div>
+      <div class="form-group">
+        <input type="text" id="tplTitleInput" placeholder="Template Title (e.g. Project Update)" />
+      </div>
+      <div class="form-group">
+        <textarea id="tplBodyInput" rows="3" placeholder="Template Content Body..."></textarea>
+      </div>
+      <button id="addTplBtn" class="btn btn-secondary">+ Save Custom Template</button>
+
+      <div class="section-title margin-top-md">My Custom Templates</div>
+      <div id="customTemplatesList" class="templates-list">
+        <div class="empty-state">No custom templates saved yet.</div>
+      </div>
+    </main>
+
+    <!-- Tab 3: Diagnostics & Ping -->
+    <main id="tab-diagnostics" class="tab-content">
+      <div class="diag-card">
+        <div class="diag-item">
+          <span>Server Status:</span>
+          <span id="diagServerStatus" class="status-indicator">Checking...</span>
+        </div>
+        <div class="diag-item">
+          <span>Latency:</span>
+          <span id="diagLatency" class="stat-value">-- ms</span>
+        </div>
+        <div class="diag-item">
+          <span>Active Extension Mode:</span>
+          <span class="stat-value">MV3 Service Worker</span>
+        </div>
+      </div>
+
+      <button id="pingBtn" class="btn btn-outline margin-top-md">⚡ Run Diagnostic Ping</button>
+
+      <div class="section-title margin-top-md">Provider API Key Status</div>
+      <div id="providerConfigList" class="provider-status-list">
+        <div class="loading-state">Checking backend status...</div>
+      </div>
+    </main>
+
     <footer class="footer">
-      <span>MailGenie Server Status: </span>
-      <span id="serverStatus" class="status-indicator">Checking...</span>
+      <div class="footer-status">
+        <span class="footer-dot" id="footerDot"></span>
+        <span id="serverStatus" class="status-indicator">Checking backend...</span>
+      </div>
+      <a href="https://github.com/dipanshubatra/MailGenie" target="_blank" class="footer-link">GitHub Docs</a>
     </footer>
   </div>
 
