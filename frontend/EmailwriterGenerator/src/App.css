@@ -1,4 +1,4 @@
-/* Design System & Premium CSS Styles for MailGenie */
+/* Design System & Premium CSS Styles for MailGenie v1.1 */
 
 :root {
   --font-family-title: 'Outfit', 'Inter', sans-serif;
@@ -137,7 +137,7 @@ body {
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.04) !important;
 }
 
-/* Badges */
+/* Badges & Metric Pills */
 .badge-provider {
   padding: 4px 10px;
   border-radius: 20px;
@@ -192,6 +192,16 @@ body {
   color: #c084fc;
   font-weight: 700;
   border: 1px solid rgba(192, 132, 252, 0.15);
+}
+
+/* Prompt Studio & Multi-Tone Comparison Cards */
+.compare-card {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.compare-card:hover {
+  border-color: var(--accent-color) !important;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.15) !important;
 }
 
 /* Copy Animation */
