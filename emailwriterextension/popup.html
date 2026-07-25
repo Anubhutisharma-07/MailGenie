@@ -13,7 +13,7 @@
         <span class="logo">💌</span>
         <div>
           <h1 class="title">MailGenie AI</h1>
-          <span class="subtitle">Email Generator & Template Engine v1.1</span>
+          <span class="subtitle">Smart Email Assistant v2.0</span>
         </div>
       </div>
 
@@ -28,26 +28,29 @@
     <main id="tab-settings" class="tab-content active">
       <div class="form-group">
         <label for="backendUrl">Backend API Server URL</label>
-        <input type="text" id="backendUrl" placeholder="http://localhost:8080" />
+        <div class="input-with-button">
+          <input type="text" id="backendUrl" placeholder="http://localhost:8080" />
+          <button id="testConnBtn" class="btn-sm" title="Test Connection">Test</button>
+        </div>
       </div>
 
       <div class="form-group">
-        <label for="provider">Default AI Provider</label>
+        <label for="provider">Default LLM Provider</label>
         <select id="provider">
-          <option value="groq">⚡ Groq LPU (Fastest)</option>
-          <option value="openai">🧠 OpenAI GPT-4o / 3.5</option>
-          <option value="gemini">♊ Google Gemini Flash</option>
+          <option value="groq">⚡ Groq LPU (Ultra Fast)</option>
+          <option value="openai">🧠 OpenAI GPT-4o</option>
+          <option value="gemini">♊ Google Gemini 2.5</option>
           <option value="claude">🦉 Anthropic Claude 3.5</option>
         </select>
       </div>
 
       <div class="form-group">
-        <label for="apiKey">Custom API Key (Optional)</label>
-        <input type="password" id="apiKey" placeholder="Overrides backend key" />
+        <label for="apiKey">Custom API Key (Optional Override)</label>
+        <input type="password" id="apiKey" placeholder="gsk_... or sk-..." />
       </div>
 
-      <div class="form-group row-group">
-        <div class="form-group flex-1">
+      <div class="form-row">
+        <div class="form-group half">
           <label for="defaultTone">Default Tone</label>
           <select id="defaultTone">
             <option value="professional">👔 Professional</option>
@@ -56,30 +59,33 @@
             <option value="persuasive">🎯 Persuasive</option>
             <option value="urgent">⏰ Urgent</option>
             <option value="empathetic">❤️ Empathetic</option>
+            <option value="concise">⚡ Concise</option>
+            <option value="detailed">📝 Detailed</option>
           </select>
         </div>
 
-        <div class="form-group flex-1">
+        <div class="form-group half">
           <label for="defaultLanguage">Default Language</label>
           <select id="defaultLanguage">
-            <option value="English">English 🇺🇸</option>
-            <option value="Spanish">Spanish 🇪🇸</option>
-            <option value="French">French 🇫🇷</option>
-            <option value="German">German 🇩🇪</option>
-            <option value="Italian">Italian 🇮🇹</option>
-            <option value="Japanese">Japanese 🇯🇵</option>
-            <option value="Chinese">Chinese 🇨🇳</option>
-            <option value="Hindi">Hindi 🇮🇳</option>
+            <option value="English">🇺🇸 English</option>
+            <option value="Spanish">🇪🇸 Spanish</option>
+            <option value="French">🇫🇷 French</option>
+            <option value="German">🇩🇪 German</option>
+            <option value="Italian">🇮🇹 Italian</option>
+            <option value="Japanese">🇯🇵 Japanese</option>
+            <option value="Chinese">🇨🇳 Chinese</option>
+            <option value="Hindi">🇮🇳 Hindi</option>
+            <option value="Portuguese">🇵🇹 Portuguese</option>
           </select>
         </div>
       </div>
 
       <div class="form-group">
-        <label for="customModel">Custom Model Identifier (Optional)</label>
-        <input type="text" id="customModel" placeholder="e.g. llama-3.3-70b-versatile, gpt-4o-mini" />
+        <label for="customModel">Custom Model ID (Optional)</label>
+        <input type="text" id="customModel" placeholder="e.g. llama-3.3-70b-versatile" />
       </div>
 
-      <button id="saveBtn" class="btn">Save Configuration</button>
+      <button id="saveBtn" class="btn btn-primary">Save Settings</button>
 
       <div id="status" class="status-msg hide">
         Configuration saved successfully!

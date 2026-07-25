@@ -1,4 +1,4 @@
-// MailGenie Options & Diagnostic Popup Script v1.1.0
+// MailGenie Options & Diagnostic Popup Script v2.0
 
 document.addEventListener('DOMContentLoaded', () => {
   // DOM References
@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const tabContents = document.querySelectorAll('.tab-content');
 
   const backendUrlInput = document.getElementById('backendUrl');
+  const testConnBtn = document.getElementById('testConnBtn');
   const providerSelect = document.getElementById('provider');
   const apiKeyInput = document.getElementById('apiKey');
   const defaultToneSelect = document.getElementById('defaultTone');
@@ -50,12 +51,12 @@ document.addEventListener('DOMContentLoaded', () => {
       customModel: '',
       customTemplates: []
     }, (items) => {
-      backendUrlInput.value = items.backendUrl;
-      providerSelect.value = items.provider;
-      apiKeyInput.value = items.apiKey;
-      defaultToneSelect.value = items.defaultTone;
-      defaultLanguageSelect.value = items.defaultLanguage;
-      customModelInput.value = items.customModel;
+      if (backendUrlInput) backendUrlInput.value = items.backendUrl;
+      if (providerSelect) providerSelect.value = items.provider;
+      if (apiKeyInput) apiKeyInput.value = items.apiKey;
+      if (defaultToneSelect) defaultToneSelect.value = items.defaultTone;
+      if (defaultLanguageSelect) defaultLanguageSelect.value = items.defaultLanguage;
+      if (customModelInput) customModelInput.value = items.customModel;
 
       renderCustomTemplates(items.customTemplates || []);
       runDiagnostics(items.backendUrl);
@@ -63,61 +64,90 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Save Settings
-  saveBtn.addEventListener('click', () => {
-    let backendUrl = backendUrlInput.value.trim() || 'http://localhost:8080';
+  if (saveBtn) {
+    saveBtn.addEventListener('click', () => {
+      let backendUrl = backendUrlInput ? backendUrlInput.value.trim() : 'http://localhost:8080';
+      if (!backendUrl) backendUrl = 'http://localhost:8080';
 
-    if (backendUrl && !/^https?:\/\//i.test(backendUrl)) {
-      backendUrl = 'http://' + backendUrl;
-    }
-    backendUrlInput.value = backendUrl;
+      if (backendUrl && !/^https?:\/\//i.test(backendUrl)) {
+        backendUrl = 'http://' + backendUrl;
+      }
+      if (backendUrlInput) backendUrlInput.value = backendUrl;
 
-    const provider = providerSelect.value;
-    const apiKey = apiKeyInput.value.trim();
-    const defaultTone = defaultToneSelect.value;
-    const defaultLanguage = defaultLanguageSelect.value;
-    const customModel = customModelInput.value.trim();
+      const provider = providerSelect ? providerSelect.value : 'groq';
+      const apiKey = apiKeyInput ? apiKeyInput.value.trim() : '';
+      const defaultTone = defaultToneSelect ? defaultToneSelect.value : 'professional';
+      const defaultLanguage = defaultLanguageSelect ? defaultLanguageSelect.value : 'English';
+      const customModel = customModelInput ? customModelInput.value.trim() : '';
 
-    chrome.storage.local.set({
-      backendUrl,
-      provider,
-      apiKey,
-      defaultTone,
-      defaultLanguage,
-      customModel
-    }, () => {
-      statusMsg.classList.remove('hide');
-      runDiagnostics(backendUrl);
+      chrome.storage.local.set({
+        backendUrl,
+        provider,
+        apiKey,
+        defaultTone,
+        defaultLanguage,
+        customModel
+      }, () => {
+        if (statusMsg) statusMsg.classList.remove('hide');
+        runDiagnostics(backendUrl);
 
-      setTimeout(() => {
-        statusMsg.classList.add('hide');
-      }, 2500);
+        setTimeout(() => {
+          if (statusMsg) statusMsg.classList.add('hide');
+        }, 2500);
+      });
     });
-  });
+  }
+
+  // Test connection button
+  if (testConnBtn) {
+    testConnBtn.addEventListener('click', () => {
+      let backendUrl = backendUrlInput ? backendUrlInput.value.trim() : 'http://localhost:8080';
+      if (!backendUrl) backendUrl = 'http://localhost:8080';
+      if (backendUrl && !/^https?:\/\//i.test(backendUrl)) {
+        backendUrl = 'http://' + backendUrl;
+      }
+      runDiagnostics(backendUrl);
+    });
+  }
 
   // Custom Template Operations
-  addTplBtn.addEventListener('click', () => {
-    const title = tplTitleInput.value.trim();
-    const body = tplBodyInput.value.trim();
+  if (addTplBtn) {
+    addTplBtn.addEventListener('click', () => {
+      const title = tplTitleInput ? tplTitleInput.value.trim() : '';
+      const body = tplBodyInput ? tplBodyInput.value.trim() : '';
 
-    if (!title || !body) {
-      alert('Please enter both a title and template content.');
-      return;
-    }
-
-    chrome.runtime.sendMessage({
-      action: 'SAVE_CUSTOM_TEMPLATE',
-      title: title,
-      body: body
-    }, (res) => {
-      if (res && res.success) {
-        tplTitleInput.value = '';
-        tplBodyInput.value = '';
-        renderCustomTemplates(res.customTemplates);
+      if (!title || !body) {
+        alert('Please enter both a title and template content.');
+        return;
       }
+
+      chrome.runtime.sendMessage({
+        action: 'SAVE_CUSTOM_TEMPLATE',
+        title: title,
+        body: body
+      }, (res) => {
+        if (res && res.success) {
+          if (tplTitleInput) tplTitleInput.value = '';
+          if (tplBodyInput) tplBodyInput.value = '';
+          renderCustomTemplates(res.customTemplates);
+        } else {
+          // Local fallback saving
+          chrome.storage.local.get({ customTemplates: [] }, (items) => {
+            const list = items.customTemplates || [];
+            list.push({ id: Date.now().toString(), title, body });
+            chrome.storage.local.set({ customTemplates: list }, () => {
+              if (tplTitleInput) tplTitleInput.value = '';
+              if (tplBodyInput) tplBodyInput.value = '';
+              renderCustomTemplates(list);
+            });
+          });
+        }
+      });
     });
-  });
+  }
 
   function renderCustomTemplates(templates) {
+    if (!customTemplatesList) return;
     customTemplatesList.innerHTML = '';
     if (!templates || templates.length === 0) {
       customTemplatesList.innerHTML = '<div class="empty-state">No custom templates saved yet.</div>';
@@ -151,36 +181,51 @@ document.addEventListener('DOMContentLoaded', () => {
     }, (res) => {
       if (res && res.success) {
         renderCustomTemplates(res.customTemplates);
+      } else {
+        chrome.storage.local.get({ customTemplates: [] }, (items) => {
+          const list = (items.customTemplates || []).filter(t => t.id !== id);
+          chrome.storage.local.set({ customTemplates: list }, () => {
+            renderCustomTemplates(list);
+          });
+        });
       }
     });
   }
 
   // Diagnostics & Health Ping
-  pingBtn.addEventListener('click', () => {
-    const backendUrl = backendUrlInput.value.trim() || 'http://localhost:8080';
-    runDiagnostics(backendUrl);
-  });
+  if (pingBtn) {
+    pingBtn.addEventListener('click', () => {
+      const backendUrl = backendUrlInput ? backendUrlInput.value.trim() : 'http://localhost:8080';
+      runDiagnostics(backendUrl);
+    });
+  }
 
   function runDiagnostics(url) {
     if (diagServerStatus) diagServerStatus.textContent = 'Testing...';
     if (serverStatus) serverStatus.textContent = 'Testing connection...';
     if (footerDot) footerDot.className = 'footer-dot checking';
 
-    chrome.runtime.sendMessage({
-      action: 'HEALTH_CHECK',
-      backendUrl: url
-    }, (res) => {
-      if (res && res.online) {
+    const startTime = Date.now();
+    const cleanUrl = url.endsWith('/') ? url.slice(0, -1) : url;
+
+    fetch(`${cleanUrl}/api/email/config`)
+      .then(res => {
+        if (!res.ok) throw new Error('API server error');
+        return res.json();
+      })
+      .then(config => {
+        const latency = Date.now() - startTime;
         if (diagServerStatus) {
           diagServerStatus.textContent = 'Online';
           diagServerStatus.className = 'status-indicator status-online';
         }
-        if (diagLatency) diagLatency.textContent = `${res.latency} ms`;
-        if (serverStatus) serverStatus.textContent = `Backend Online (${res.latency} ms)`;
+        if (diagLatency) diagLatency.textContent = `${latency} ms`;
+        if (serverStatus) serverStatus.textContent = `Backend Online (${latency} ms)`;
         if (footerDot) footerDot.className = 'footer-dot online';
 
-        updateProviderStatusList(res.config);
-      } else {
+        updateProviderStatusList(config);
+      })
+      .catch(() => {
         if (diagServerStatus) {
           diagServerStatus.textContent = 'Offline';
           diagServerStatus.className = 'status-indicator status-offline';
@@ -190,11 +235,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (footerDot) footerDot.className = 'footer-dot offline';
 
         updateProviderStatusList(null);
-      }
-    });
+      });
   }
 
   function updateProviderStatusList(config) {
+    if (!providerConfigList) return;
     providerConfigList.innerHTML = '';
     const providers = [
       { key: 'groq', name: 'Groq LPU' },

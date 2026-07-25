@@ -35,14 +35,19 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  useMediaQuery
+  useMediaQuery,
+  Slider,
+  Chip,
+  Tooltip,
+  Snackbar,
+  Alert
 } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import axios from 'axios';
 
 // Sidebar Drawer Width
-const drawerWidth = 260;
+const drawerWidth = 270;
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -69,6 +74,25 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+
+  // Multi-Tone Compare Mode
+  const [compareMode, setCompareMode] = useState(false);
+  const [compareReplies, setCompareReplies] = useState({
+    professional: '',
+    casual: '',
+    persuasive: ''
+  });
+  const [compareLoading, setCompareLoading] = useState(false);
+  
+  // Prompt Studio Preset States
+  const [studioFormality, setStudioFormality] = useState(70);
+  const [studioLength, setStudioLength] = useState('medium');
+  const [studioSignature, setStudioSignature] = useState('Best regards,\n[Your Name]');
+  const [studioSalutation, setStudioSalutation] = useState('Dear [Name],');
+  const [studioCustomInstruction, setStudioCustomInstruction] = useState('');
+
+  // Toast Notification state
+  const [toast, setToast] = useState({ open: false, message: '', severity: 'info' });
 
   // History and config states
   const [historyList, setHistoryList] = useState([]);
@@ -99,14 +123,14 @@ function App() {
     palette: {
       mode: isDarkMode ? 'dark' : 'light',
       primary: {
-        main: '#6366f1', // Indigo
+        main: '#6366f1',
       },
       secondary: {
-        main: '#c084fc', // Purple
+        main: '#c084fc',
       },
       background: {
         default: isDarkMode ? '#090d16' : '#f8fafc',
-        paper: isDarkMode ? 'rgba(17, 24, 39, 0.7)' : 'rgba(255, 255, 255, 0.9)',
+        paper: isDarkMode ? 'rgba(17, 24, 39, 0.75)' : 'rgba(255, 255, 255, 0.92)',
       },
       text: {
         primary: isDarkMode ? '#f8fafc' : '#0f172a',
@@ -115,22 +139,10 @@ function App() {
     },
     typography: {
       fontFamily: "'Inter', sans-serif",
-      h3: {
-        fontFamily: "'Outfit', sans-serif",
-        fontWeight: 800,
-      },
-      h4: {
-        fontFamily: "'Outfit', sans-serif",
-        fontWeight: 700,
-      },
-      h5: {
-        fontFamily: "'Outfit', sans-serif",
-        fontWeight: 650,
-      },
-      h6: {
-        fontFamily: "'Outfit', sans-serif",
-        fontWeight: 600,
-      },
+      h3: { fontFamily: "'Outfit', sans-serif", fontWeight: 800 },
+      h4: { fontFamily: "'Outfit', sans-serif", fontWeight: 700 },
+      h5: { fontFamily: "'Outfit', sans-serif", fontWeight: 650 },
+      h6: { fontFamily: "'Outfit', sans-serif", fontWeight: 600 },
     },
   });
 
@@ -153,11 +165,9 @@ function App() {
   // Check health and load data
   const checkBackendHealth = async () => {
     try {
-      // Test server connection
       const response = await axios.get(`${backendUrl}/api/email/config`);
       setProviderConfig(response.data);
       setBackendOnline(true);
-
       // Auto select first configured provider
       if (response.data) {
         if (response.data.groq) setProvider('groq');
@@ -166,7 +176,6 @@ function App() {
         else if (response.data.claude) setProvider('claude');
       }
 
-      // Fetch history if online
       const historyResponse = await axios.get(`${backendUrl}/api/history`);
       setHistoryList(historyResponse.data);
     } catch (err) {
@@ -175,13 +184,22 @@ function App() {
     }
   };
 
+  const showNotification = (message, severity = 'info') => {
+    setToast({ open: true, message, severity });
+  };
+
   const handleBackendUrlChange = (newUrl) => {
     setBackendUrl(newUrl);
     localStorage.setItem('mailgenie_backend_url', newUrl);
   };
 
-  // Generate Email Reply
+  // Generate Single AI Reply
   const handleSubmit = async () => {
+    if (compareMode) {
+      handleCompareSubmit();
+      return;
+    }
+
     setLoading(true);
     setError('');
     setGeneratedReply('');
@@ -194,16 +212,55 @@ function App() {
         language
       });
       const reply = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
-      setGeneratedReply(reply);
+      showNotification('AI Reply generated successfully!', 'success');
 
       // Refresh history list
       const histRes = await axios.get(`${backendUrl}/api/history`);
       setHistoryList(histRes.data);
     } catch (err) {
       setError('Failed to generate email reply. Please check your backend connection and API configurations.');
+      showNotification('Generation failed. Check backend connection.', 'error');
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Generate Multi-Tone Comparisons
+  const handleCompareSubmit = async () => {
+    setCompareLoading(true);
+    setError('');
+    setCompareReplies({ professional: '', casual: '', persuasive: '' });
+
+    try {
+      const tonesToFetch = ['professional', 'casual', 'persuasive'];
+      const requests = tonesToFetch.map(t => 
+        axios.post(`${backendUrl}/api/email/generate`, {
+          emailContent,
+          tone: t,
+          provider,
+          model,
+          language
+        })
+      );
+
+      const results = await Promise.allSettled(requests);
+      const newCompareState = {
+        professional: results[0].status === 'fulfilled' ? results[0].value.data : 'Failed to draft',
+        casual: results[1].status === 'fulfilled' ? results[1].value.data : 'Failed to draft',
+        persuasive: results[2].status === 'fulfilled' ? results[2].value.data : 'Failed to draft'
+      };
+
+      setCompareReplies(newCompareState);
+      showNotification('Generated multi-tone comparisons!', 'success');
+
+      const histRes = await axios.get(`${backendUrl}/api/history`);
+      setHistoryList(histRes.data);
+    } catch (err) {
+      setError('Failed to generate multi-tone comparison.');
+      showNotification('Comparison generation failed.', 'error');
+    } finally {
+      setCompareLoading(false);
     }
   };
 
@@ -214,11 +271,12 @@ function App() {
         headers: { 'Content-Type': 'application/json' }
       });
       setEditingId(null);
-      // Reload history
+      showNotification('Annotation updated.', 'success');
       const histRes = await axios.get(`${backendUrl}/api/history`);
       setHistoryList(histRes.data);
     } catch (err) {
       console.error("Failed to update comment:", err);
+      showNotification('Failed to update annotation note.', 'error');
     }
   };
 
@@ -227,13 +285,56 @@ function App() {
     if (window.confirm("Are you sure you want to delete this history record?")) {
       try {
         await axios.delete(`${backendUrl}/api/history/${id}`);
-        // Reload history
+        showNotification('History entry removed.', 'info');
         const histRes = await axios.get(`${backendUrl}/api/history`);
         setHistoryList(histRes.data);
       } catch (err) {
         console.error("Failed to delete history:", err);
       }
     }
+  };
+
+  // Export History as JSON / CSV
+  const handleExportHistory = (format = 'json') => {
+    if (historyList.length === 0) {
+      showNotification('No history logs to export.', 'warning');
+      return;
+    }
+
+    let dataStr = '';
+    let mimeType = '';
+    let fileName = `mailgenie_history_${Date.now()}`;
+
+    if (format === 'csv') {
+      const headers = ['ID', 'Date', 'Provider', 'Tone', 'Language', 'Original Content', 'Generated Reply', 'Comment'];
+      const rows = historyList.map(h => [
+        h.id,
+        `"${new Date(h.createdAt).toLocaleString()}"`,
+        `"${h.provider || ''}"`,
+        `"${h.tone || ''}"`,
+        `"${h.language || ''}"`,
+        `"${(h.originalContent || '').replace(/"/g, '""')}"`,
+        `"${(h.generatedReply || '').replace(/"/g, '""')}"`,
+        `"${(h.userComment || '').replace(/"/g, '""')}"`
+      ]);
+      dataStr = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      mimeType = 'text/csv;charset=utf-8;';
+      fileName += '.csv';
+    } else {
+      dataStr = JSON.stringify(historyList, null, 2);
+      mimeType = 'application/json;charset=utf-8;';
+      fileName += '.json';
+    }
+
+    const blob = new Blob([dataStr], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showNotification(`Exported history as ${format.toUpperCase()}!`, 'success');
   };
 
   // Templates CRUD
@@ -249,6 +350,7 @@ function App() {
     localStorage.setItem('mailgenie_custom_templates', JSON.stringify(updated));
     setNewTemplateTitle('');
     setNewTemplateBody('');
+    showNotification('New template saved successfully!', 'success');
   };
 
   const handleDeleteTemplate = (id) => {
@@ -256,12 +358,14 @@ function App() {
       const updated = customTemplates.filter(t => t.id !== id);
       setCustomTemplates(updated);
       localStorage.setItem('mailgenie_custom_templates', JSON.stringify(updated));
+      showNotification('Template deleted.', 'info');
     }
   };
 
   const handleUseTemplate = (body) => {
     setEmailContent(body);
     setActiveTab('generator');
+    showNotification('Template loaded into generator!', 'info');
   };
 
   const startEditing = (id, comment) => {
@@ -269,11 +373,17 @@ function App() {
     setTempComment(comment || '');
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(generatedReply);
+  const handleCopy = (text = generatedReply) => {
+    navigator.clipboard.writeText(text);
     setCopied(true);
+    showNotification('Copied draft to clipboard!', 'success');
     setTimeout(() => setCopied(false), 2000);
   };
+
+  // Text Analytics Calculations
+  const wordCount = emailContent.trim() ? emailContent.trim().split(/\s+/).length : 0;
+  const charCount = emailContent.length;
+  const estReadingTime = Math.ceil(wordCount / 200);
 
   // Filter history based on search term
   const filteredHistory = historyList.filter((item) => {
@@ -289,7 +399,7 @@ function App() {
 
   // Computed Analytics Metrics
   const totalGenerated = historyList.length;
-  const timeSavedMinutes = totalGenerated * 2; // Estimate 2 minutes saved per draft
+  const timeSavedMinutes = totalGenerated * 2;
   const toneUsage = historyList.reduce((acc, curr) => {
     const t = curr.tone || 'default';
     acc[t] = (acc[t] || 0) + 1;
@@ -305,6 +415,7 @@ function App() {
 
   const navigationItems = [
     { id: 'generator', label: '⚡ Email Generator', icon: '📝' },
+    { id: 'studio', label: '🎨 Prompt Studio', icon: '✨' },
     { id: 'history', label: '📜 History Logs', icon: '⏳' },
     { id: 'templates', label: '📂 Saved Templates', icon: '📁' },
     { id: 'analytics', label: '📊 Usage Analytics', icon: '📈' },
@@ -318,8 +429,8 @@ function App() {
         <Typography variant="h5" component="div" className="app-title" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           💌 MailGenie
         </Typography>
-        <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 650 }}>
-          AI EMAIL WRITING SUITE
+        <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 650, letterSpacing: 0.5 }}>
+          AI EMAIL WRITING SUITE v1.1
         </Typography>
       </Box>
 
@@ -334,7 +445,7 @@ function App() {
               className={activeTab === item.id ? "sidebar-item-active" : "sidebar-item"}
               sx={{
                 borderRadius: '12px',
-                py: 1.5,
+                py: 1.4,
                 px: 2,
                 transition: 'all 0.2s ease'
               }}
@@ -407,32 +518,54 @@ function App() {
             {/* TAB: GENERATOR */}
             {activeTab === 'generator' && (
               <Box>
-                <Box sx={{ mb: 4 }}>
-                  <Typography variant="h3" component="h1" gutterBottom className="app-title">
-                    ⚡ Email Generator
-                  </Typography>
-                  <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-                    Generate tailored drafts using advanced artificial intelligence models.
-                  </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, flexWrap: 'wrap', gap: 2 }}>
+                  <Box>
+                    <Typography variant="h3" component="h1" gutterBottom className="app-title">
+                      ⚡ Email Generator
+                    </Typography>
+                    <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+                      Generate tailored drafts using advanced artificial intelligence models.
+                    </Typography>
+                  </Box>
+                  
+                  <FormControlLabel
+                    control={
+                      <Switch 
+                        checked={compareMode} 
+                        onChange={(e) => setCompareMode(e.target.checked)} 
+                        color="secondary"
+                      />
+                    }
+                    label={<Typography variant="body2" sx={{ fontWeight: 700 }}>⚡ Multi-Tone Comparison Mode</Typography>}
+                  />
                 </Box>
 
                 <Grid container spacing={4}>
                   {/* Left Form */}
-                  <Grid item xs={12} md={7}>
+                  <Grid item xs={12} md={compareMode ? 5 : 7}>
                     <Paper className="glass-card" sx={{ p: 4 }}>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-
-                        <TextField
-                          fullWidth
-                          multiline
-                          rows={6}
-                          variant='outlined'
-                          label="Original Email Context"
-                          placeholder="Paste details of the thread or reply context here..."
-                          value={emailContent}
-                          onChange={(e) => setEmailContent(e.target.value)}
-                          className="glow-input"
-                        />
+                        <Box>
+                          <TextField 
+                            fullWidth
+                            multiline
+                            rows={6}
+                            variant='outlined'
+                            label="Original Email Context / Prompt"
+                            placeholder="Paste details of the email thread or type a prompt instruction here..."
+                            value={emailContent}
+                            onChange={(e) => setEmailContent(e.target.value)}
+                            className="glow-input"
+                          />
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1, px: 0.5 }}>
+                            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                              {charCount} chars • {wordCount} words
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
+                              Est. read: ~{estReadingTime} min
+                            </Typography>
+                          </Box>
+                        </Box>
 
                         <Grid container spacing={2}>
                           {/* Provider Selection */}
@@ -465,7 +598,7 @@ function App() {
 
                           {/* Tone Selection */}
                           <Grid item xs={12} sm={4}>
-                            <FormControl fullWidth>
+                            <FormControl fullWidth disabled={compareMode}>
                               <InputLabel>Tone</InputLabel>
                               <Select
                                 value={tone}
@@ -519,18 +652,18 @@ function App() {
                         <Button
                           variant='contained'
                           onClick={handleSubmit}
-                          disabled={!emailContent || loading || !backendOnline}
+                          disabled={!emailContent || loading || compareLoading || !backendOnline}
                           fullWidth
                           size="large"
                           className="gradient-btn"
                           sx={{ py: 1.8 }}
                         >
-                          {loading ? (
+                          {(loading || compareLoading) ? (
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                               <CircularProgress size={20} color="inherit" />
-                              <span>Drafting Reply...</span>
+                              <span>{compareMode ? "Drafting Comparisons..." : "Drafting Reply..."}</span>
                             </Box>
-                          ) : !backendOnline ? "Backend Offline" : "Generate AI Reply"}
+                          ) : !backendOnline ? "Backend Offline" : compareMode ? "⚡ Generate 3 Tones Side-by-Side" : "Generate AI Reply"}
                         </Button>
                       </Box>
 
@@ -542,46 +675,176 @@ function App() {
                     </Paper>
                   </Grid>
 
-                  {/* Right Output */}
-                  <Grid item xs={12} md={5}>
-                    <Paper className="glass-card" sx={{ p: 4, height: '100%', minHeight: 350, display: 'flex', flexDirection: 'column' }}>
-                      <Typography variant="h6" gutterBottom sx={{ color: 'primary.main', display: 'flex', alignItems: 'center', gap: 1 }}>
-                        ✨ Generated Reply Draft
+                  {/* Right Output Area (Standard or Multi-Tone Comparison) */}
+                  <Grid item xs={12} md={compareMode ? 7 : 5}>
+                    {compareMode ? (
+                      <Paper className="glass-card" sx={{ p: 3, height: '100%' }}>
+                        <Typography variant="h6" gutterBottom sx={{ color: 'secondary.main', fontWeight: 700 }}>
+                          ⚡ Multi-Tone Side-by-Side Comparison
+                        </Typography>
+                        <Divider sx={{ my: 2 }} />
+
+                        <Grid container spacing={2}>
+                          {[
+                            { key: 'professional', label: '👔 Professional', text: compareReplies.professional },
+                            { key: 'casual', label: '☕ Casual', text: compareReplies.casual },
+                            { key: 'persuasive', label: '🎯 Persuasive', text: compareReplies.persuasive }
+                          ].map(col => (
+                            <Grid item xs={12} key={col.key}>
+                              <Card variant="outlined" sx={{ borderRadius: 3, p: 2, bgcolor: isDarkMode ? 'rgba(0,0,0,0.2)' : '#ffffff' }}>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                                    {col.label}
+                                  </Typography>
+                                  {col.text && (
+                                    <Button size="small" variant="text" onClick={() => handleCopy(col.text)}>
+                                      📋 Copy
+                                    </Button>
+                                  )}
+                                </Box>
+                                <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', fontSize: '0.82rem', color: 'text.primary' }}>
+                                  {col.text || <span style={{ opacity: 0.5, fontStyle: 'italic' }}>Awaiting comparison generation...</span>}
+                                </Typography>
+                              </Card>
+                            </Grid>
+                          ))}
+                        </Grid>
+                      </Paper>
+                    ) : (
+                      <Paper className="glass-card" sx={{ p: 4, height: '100%', minHeight: 350, display: 'flex', flexDirection: 'column' }}>
+                        <Typography variant="h6" gutterBottom sx={{ color: 'primary.main', display: 'flex', alignItems: 'center', gap: 1 }}>
+                          ✨ Generated Reply Draft
+                        </Typography>
+                        <Divider sx={{ my: 2 }} />
+                        
+                        {generatedReply ? (
+                          <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <TextField
+                              fullWidth
+                              multiline
+                              rows={10}
+                              variant='outlined'
+                              value={generatedReply}
+                              inputProps={{ readOnly: true }}
+                              sx={{ 
+                                backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.25)' : '#f8fafc',
+                                borderRadius: 3,
+                                flexGrow: 1
+                              }}
+                            />
+                            <Button
+                              variant={copied ? 'contained' : 'outlined'}
+                              color={copied ? 'success' : 'primary'}
+                              fullWidth
+                              onClick={() => handleCopy(generatedReply)}
+                              sx={{ borderRadius: 3, py: 1.5 }}
+                            >
+                              {copied ? '✅ Copied to Clipboard!' : '📋 Copy Draft'}
+                            </Button>
+                          </Box>
+                        ) : (
+                          <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', flexGrow: 1, opacity: 0.6 }}>
+                            <Typography variant="body1" sx={{ fontStyle: 'italic', textAlign: 'center' }}>
+                              Configure inputs on the left and tap "Generate AI Reply" to craft your draft response here.
+                            </Typography>
+                          </Box>
+                        )}
+                      </Paper>
+                    )}
+                  </Grid>
+                </Grid>
+              </Box>
+            )}
+
+            {/* TAB: PROMPT STUDIO */}
+            {activeTab === 'studio' && (
+              <Box>
+                <Box sx={{ mb: 4 }}>
+                  <Typography variant="h3" component="h2" className="app-title">
+                    🎨 Prompt Studio & Style Tuning
+                  </Typography>
+                  <Typography variant="body1" sx={{ color: 'text.secondary' }}>
+                    Customize generation guidelines, salutations, signatures, and default formality sliders.
+                  </Typography>
+                </Box>
+
+                <Grid container spacing={4}>
+                  <Grid item xs={12} md={6}>
+                    <Paper className="glass-card" sx={{ p: 4 }}>
+                      <Typography variant="h6" gutterBottom sx={{ fontWeight: 700 }}>
+                        🎛️ Formality & Structure Parameters
                       </Typography>
                       <Divider sx={{ my: 2 }} />
 
-                      {generatedReply ? (
-                        <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                          <TextField
-                            fullWidth
-                            multiline
-                            rows={10}
-                            variant='outlined'
-                            value={generatedReply}
-                            inputProps={{ readOnly: true }}
-                            sx={{
-                              backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.25)' : '#f8fafc',
-                              borderRadius: 3,
-                              flexGrow: 1
-                            }}
-                          />
-                          <Button
-                            variant={copied ? 'contained' : 'outlined'}
-                            color={copied ? 'success' : 'primary'}
-                            fullWidth
-                            onClick={handleCopy}
-                            sx={{ borderRadius: 3, py: 1.5 }}
-                          >
-                            {copied ? '✅ Copied to Clipboard!' : '📋 Copy Draft'}
-                          </Button>
-                        </Box>
-                      ) : (
-                        <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', flexGrow: 1, opacity: 0.6 }}>
-                          <Typography variant="body1" sx={{ fontStyle: 'italic', textAlign: 'center' }}>
-                            Configure inputs on the left and tap "Generate AI Reply" to craft your draft response here.
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                        <Box>
+                          <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>
+                            Formality Level: {studioFormality}%
                           </Typography>
+                          <Slider
+                            value={studioFormality}
+                            onChange={(e, val) => setStudioFormality(val)}
+                            valueLabelDisplay="auto"
+                            color="primary"
+                          />
                         </Box>
-                      )}
+
+                        <TextField
+                          fullWidth
+                          size="small"
+                          label="Default Salutation Prefix"
+                          value={studioSalutation}
+                          onChange={(e) => setStudioSalutation(e.target.value)}
+                        />
+
+                        <TextField
+                          fullWidth
+                          multiline
+                          rows={3}
+                          label="Default Signature Suffix"
+                          value={studioSignature}
+                          onChange={(e) => setStudioSignature(e.target.value)}
+                        />
+
+                        <TextField
+                          fullWidth
+                          multiline
+                          rows={3}
+                          label="Custom System Prompt Rules (Optional)"
+                          placeholder="e.g. Always keep bullet points concise. Never use corporate buzzwords."
+                          value={studioCustomInstruction}
+                          onChange={(e) => setStudioCustomInstruction(e.target.value)}
+                        />
+
+                        <Button
+                          variant="contained"
+                          className="gradient-btn"
+                          onClick={() => showNotification('Studio preferences saved locally!', 'success')}
+                        >
+                          Save Style Preset
+                        </Button>
+                      </Box>
+                    </Paper>
+                  </Grid>
+
+                  <Grid item xs={12} md={6}>
+                    <Paper className="glass-card" sx={{ p: 4, height: '100%' }}>
+                      <Typography variant="h6" gutterBottom sx={{ fontWeight: 700, color: 'secondary.main' }}>
+                        👁️ Live Prompt Construction Preview
+                      </Typography>
+                      <Divider sx={{ my: 2 }} />
+
+                      <Box sx={{ p: 2.5, bgcolor: isDarkMode ? 'rgba(0,0,0,0.3)' : '#f1f5f9', borderRadius: 3, fontFamily: 'monospace', fontSize: '0.85rem', whiteSpace: 'pre-wrap' }}>
+                        {`[SYSTEM INSTRUCTION]
+Role: Professional Email Copywriter
+Formality Index: ${studioFormality}/100
+Salutation: "${studioSalutation}"
+Signature: "${studioSignature.replace(/\n/g, ' ')}"
+Custom Directives: ${studioCustomInstruction || 'None'}
+
+[INPUT CONTEXT]
+"${emailContent || 'Your input email text will appear here...'}"`}
+                      </Box>
                     </Paper>
                   </Grid>
                 </Grid>
@@ -597,19 +860,28 @@ function App() {
                       📜 History & Logs
                     </Typography>
                     <Typography variant="body1" sx={{ color: 'text.secondary' }}>
-                      View, search, edit annotations, and manage your past AI-generated replies.
+                      View, search, edit annotations, and export your past AI-generated replies.
                     </Typography>
                   </Box>
-                  <TextField
-                    size="small"
-                    placeholder="Search history..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    sx={{ width: 280 }}
-                    InputProps={{
-                      startAdornment: <InputAdornment position="start">🔍</InputAdornment>,
-                    }}
-                  />
+
+                  <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
+                    <Button variant="outlined" size="small" onClick={() => handleExportHistory('csv')} sx={{ borderRadius: 2 }}>
+                      📥 CSV
+                    </Button>
+                    <Button variant="outlined" size="small" onClick={() => handleExportHistory('json')} sx={{ borderRadius: 2 }}>
+                      📥 JSON
+                    </Button>
+                    <TextField
+                      size="small"
+                      placeholder="Search history..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      sx={{ width: 220 }}
+                      InputProps={{
+                        startAdornment: <InputAdornment position="start">🔍</InputAdornment>,
+                      }}
+                    />
+                  </Box>
                 </Box>
 
                 {!backendOnline ? (
@@ -687,7 +959,6 @@ function App() {
 
                         <Divider sx={{ my: 2, opacity: 0.3 }} />
 
-                        {/* Comment section */}
                         <Box>
                           {editingId === item.id ? (
                             <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 1 }}>
@@ -841,7 +1112,6 @@ function App() {
                   </Typography>
                 </Box>
 
-                {/* Scorecards */}
                 <Grid container spacing={3} sx={{ mb: 5 }}>
                   <Grid item xs={12} sm={6} md={3}>
                     <Paper className="glass-card" sx={{ p: 3, textAlign: 'center' }}>
@@ -900,9 +1170,7 @@ function App() {
                   </Grid>
                 </Grid>
 
-                {/* Custom Charts Section */}
                 <Grid container spacing={4}>
-                  {/* Bar Chart */}
                   <Grid item xs={12} md={6}>
                     <Paper className="glass-card" sx={{ p: 4, height: '100%' }}>
                       <Typography variant="h6" gutterBottom sx={{ fontWeight: 700 }}>
@@ -950,7 +1218,6 @@ function App() {
                     </Paper>
                   </Grid>
 
-                  {/* Circular/Flex Chart */}
                   <Grid item xs={12} md={6}>
                     <Paper className="glass-card" sx={{ p: 4, height: '100%' }}>
                       <Typography variant="h6" gutterBottom sx={{ fontWeight: 700 }}>
@@ -1123,6 +1390,23 @@ function App() {
           </Container>
         </Box>
       </Box>
+
+      {/* Global Snackbar Toast Notification */}
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={3500}
+        onClose={() => setToast(prev => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={() => setToast(prev => ({ ...prev, open: false }))} 
+          severity={toast.severity} 
+          variant="filled"
+          sx={{ width: '100%', borderRadius: 3, fontWeight: 600 }}
+        >
+          {toast.message}
+        </Alert>
+      </Snackbar>
     </ThemeProvider>
   );
 }

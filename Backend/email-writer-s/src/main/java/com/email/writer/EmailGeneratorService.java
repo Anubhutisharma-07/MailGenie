@@ -211,6 +211,12 @@ public class EmailGeneratorService {
         if (emailRequest.getLanguage() != null && !emailRequest.getLanguage().trim().isEmpty()) {
             prompt.append("Write the response strictly in ").append(emailRequest.getLanguage()).append(". ");
         }
+
+        if (emailRequest.getCustomInstructions() != null && !emailRequest.getCustomInstructions().trim().isEmpty()) {
+            prompt.append("\nSpecific User Instructions / Context: ")
+                  .append(emailRequest.getCustomInstructions().trim())
+                  .append("\n");
+        }
         
         if (emailRequest.isComposeMode()) {
             prompt.append("\nInstructions:\n").append(emailRequest.getEmailContent());

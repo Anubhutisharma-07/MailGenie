@@ -1,18 +1,16 @@
-// MailGenie: Premium Gmail AI Integration Content Script (V1.1.0)
-// Complete resilience framework for Gmail SPA navigation, dark mode, background worker proxying, and fallback mechanisms.
+// MailGenie: Enterprise Modern Gmail Integration Content Script v2.0
+console.log("MailGenie Extension - Content Script Loaded v2.0");
 
 (function () {
   'use strict';
 
-  console.log("MailGenie Extension - Content Script Loaded v1.1.0");
+  // Store undo state per compose container
+  const composeUndoStateMap = new WeakMap();
 
   let cachedTemplates = [];
   let templatesFetched = false;
   let isBackendConnected = true;
   let isContextValid = true;
-
-  // Map of compose container to last inserted backup text (for Undo functionality)
-  const undoMap = new WeakMap();
 
   // Guard against Extension Context Invalidation
   function checkContext() {
@@ -48,45 +46,39 @@
           }
         });
       } catch (err) {
-        console.warn("MailGenie: Messaging failed, attempting direct fetch fallback", err);
+        console.warn("MailGenie: Messaging failed", err);
         resolve({ success: false, error: err.message });
       }
     });
   }
 
-  // Toast Notification System inside Gmail
-  function showToast(message, type = 'info', duration = 4000) {
-    const existing = document.getElementById('mailgenie-toast');
-    if (existing) existing.remove();
+  // Global Toast Notification UI
+  function showToast(message, type = 'info', duration = 3000) {
+    let container = document.getElementById('mailgenie-toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'mailgenie-toast-container';
+      document.body.appendChild(container);
+    }
 
     const toast = document.createElement('div');
-    toast.id = 'mailgenie-toast';
     toast.className = `mailgenie-toast mailgenie-toast-${type}`;
 
-    const iconMap = {
-      success: '✨',
-      error: '⚠️',
-      warning: '💡',
-      info: '💌'
-    };
+    let icon = '✨';
+    if (type === 'success') icon = '✅';
+    if (type === 'error') icon = '⚠️';
+    if (type === 'undo') icon = '↩️';
 
-    toast.innerHTML = `
-      <span class="mailgenie-toast-icon">${iconMap[type] || '💌'}</span>
-      <span class="mailgenie-toast-text">${escapeHtml(message)}</span>
-      <span class="mailgenie-toast-close">&times;</span>
-    `;
+    toast.innerHTML = `<span class="toast-icon">${icon}</span><span class="toast-msg">${escapeHtml(message)}</span>`;
+    container.appendChild(toast);
 
-    document.body.appendChild(toast);
-
-    toast.querySelector('.mailgenie-toast-close').addEventListener('click', () => {
-      toast.remove();
+    requestAnimationFrame(() => {
+      toast.classList.add('show');
     });
 
     setTimeout(() => {
-      if (toast.parentNode) {
-        toast.classList.add('mailgenie-toast-fadeout');
-        setTimeout(() => toast.remove(), 400);
-      }
+      toast.classList.remove('show');
+      toast.addEventListener('transitionend', () => toast.remove());
     }, duration);
   }
 
@@ -140,7 +132,6 @@
       templatesFetched = true;
       isBackendConnected = !!response.isBackendOnline;
     } else {
-      // Emergency built-in fallbacks if service worker messaging is unreachable
       cachedTemplates = [
         { title: '👔 Professional Reply', body: 'Dear [Name],\n\nThank you for reaching out. I have reviewed your request and would be glad to assist.\n\nBest regards,\n[Your Name]' },
         { title: '☕ Casual Response', body: 'Hi [Name],\n\nThanks for the update! Sounds good. Let me know if you need anything else.\n\nBest,\n[Your Name]' },
@@ -150,29 +141,7 @@
       isBackendConnected = false;
     }
 
-    updateConnectionBadges();
     return cachedTemplates;
-  }
-
-  // Repopulate all dynamic template selects
-  function repopulateTemplateSelects() {
-    const selects = document.querySelectorAll('.mailgenie-template-select');
-    selects.forEach(select => {
-      const currentValue = select.value;
-      while (select.options.length > 1) {
-        select.remove(1);
-      }
-
-      cachedTemplates.forEach(tpl => {
-        const option = document.createElement('option');
-        option.value = tpl.body;
-        option.text = tpl.title;
-        if (tpl.body === currentValue) {
-          option.selected = true;
-        }
-        select.appendChild(option);
-      });
-    });
   }
 
   // Theme auto-detection for Gmail light/dark mode
@@ -194,7 +163,6 @@
         current = current.parentElement;
       }
     } catch (e) {
-      // Fallback: check document body attribute or media query
       if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
         return 'dark';
       }
@@ -202,39 +170,50 @@
     return 'light';
   }
 
-  // UI Component Constructors
+  // Create UI Controls
   function createAIButton() {
     const button = document.createElement('button');
-    button.className = 'mailgenie-btn';
+    button.className = 'mailgenie-btn mailgenie-btn-primary';
+    button.innerHTML = '<span class="mailgenie-btn-icon">✨</span><span class="mailgenie-btn-text">AI Reply</span>';
     button.setAttribute('type', 'button');
-    button.setAttribute('data-tooltip', 'Generate AI Email Reply (Ctrl+Shift+G)');
-    button.innerHTML = '<span class="mailgenie-btn-sparkle">✨</span> <span class="mailgenie-btn-label">AI Reply</span>';
+    button.setAttribute('title', 'Generate AI Email Reply (Ctrl+Shift+G)');
     return button;
   }
 
   function createUndoButton() {
     const button = document.createElement('button');
-    button.className = 'mailgenie-btn-secondary mailgenie-undo-btn';
+    button.className = 'mailgenie-btn mailgenie-btn-secondary mailgenie-btn-undo';
+    button.innerHTML = '<span class="mailgenie-btn-icon">↩</span><span class="mailgenie-btn-text">Undo</span>';
     button.setAttribute('type', 'button');
-    button.setAttribute('title', 'Undo AI insertion');
-    button.style.display = 'none';
-    button.innerHTML = '↩️ Undo';
+    button.setAttribute('title', 'Undo AI generated text insertion');
+    button.disabled = true;
+    return button;
+  }
+
+  function createCopyButton() {
+    const button = document.createElement('button');
+    button.className = 'mailgenie-btn mailgenie-btn-icon-only';
+    button.innerHTML = '📋';
+    button.setAttribute('type', 'button');
+    button.setAttribute('title', 'Copy draft to clipboard');
     return button;
   }
 
   function createToneSelect(defaultValue) {
     const select = document.createElement('select');
     select.className = 'mailgenie-select mailgenie-tone-select';
-    select.title = 'Select AI reply tone';
+    select.title = 'Select reply tone';
 
     const tones = [
-      { value: '', label: '🎯 Default Tone' },
       { value: 'professional', label: '👔 Professional' },
       { value: 'casual', label: '☕ Casual' },
       { value: 'friendly', label: '😊 Friendly' },
       { value: 'persuasive', label: '🎯 Persuasive' },
       { value: 'urgent', label: '⏰ Urgent' },
-      { value: 'empathetic', label: '❤️ Empathetic' }
+      { value: 'empathetic', label: '❤️ Empathetic' },
+      { value: 'concise', label: '⚡ Concise' },
+      { value: 'detailed', label: '📝 Detailed' },
+      { value: 'enthusiastic', label: '🚀 Enthusiastic' }
     ];
 
     tones.forEach(t => {
@@ -251,7 +230,7 @@
   function createLanguageSelect(defaultValue) {
     const select = document.createElement('select');
     select.className = 'mailgenie-select mailgenie-lang-select';
-    select.title = 'Select AI reply language';
+    select.title = 'Select reply language';
 
     const languages = [
       { value: 'English', label: '🇺🇸 EN' },
@@ -261,7 +240,8 @@
       { value: 'Italian', label: '🇮🇹 IT' },
       { value: 'Japanese', label: '🇯🇵 JA' },
       { value: 'Chinese', label: '🇨🇳 ZH' },
-      { value: 'Hindi', label: '🇮🇳 HI' }
+      { value: 'Hindi', label: '🇮🇳 HI' },
+      { value: 'Portuguese', label: '🇵🇹 PT' }
     ];
 
     languages.forEach(l => {
@@ -275,53 +255,90 @@
     return select;
   }
 
-  function createTemplateSelect(defaultValue) {
+  function createTemplateSelect() {
     const select = document.createElement('select');
     select.className = 'mailgenie-select mailgenie-template-select';
-    select.title = 'Insert pre-defined email template';
+    select.title = 'Quick Reply Presets / Prompts';
 
-    const placeholder = document.createElement('option');
-    placeholder.value = '';
-    placeholder.text = '📂 Templates';
-    select.appendChild(placeholder);
+    const templates = [
+      { value: '', label: '💡 Templates' },
+      { value: 'thank_confirm', label: '🙏 Thank & Confirm' },
+      { value: 'schedule_meeting', label: '📅 Schedule Meeting' },
+      { value: 'polite_decline', label: '✋ Decline Gracefully' },
+      { value: 'request_info', label: '❓ Request Details' },
+      { value: 'follow_up', label: '📌 Polite Follow-up' },
+      { value: 'custom_prompt', label: '✏️ Custom Prompt...' }
+    ];
 
-    cachedTemplates.forEach(tpl => {
+    templates.forEach(t => {
       const option = document.createElement('option');
-      option.value = tpl.body;
-      option.text = tpl.title;
-      if (tpl.body === defaultValue) option.selected = true;
+      option.value = t.value;
+      option.text = t.label;
       select.appendChild(option);
     });
 
     return select;
   }
 
-  function createStatusBadge() {
-    const badge = document.createElement('span');
-    badge.className = 'mailgenie-status-badge';
-    badge.title = isBackendConnected ? 'MailGenie Backend Online' : 'MailGenie Offline (Using Cached/Local Templates)';
-    badge.innerHTML = `<span class="mailgenie-dot ${isBackendConnected ? 'online' : 'offline'}"></span>`;
-    return badge;
-  }
+  // Custom Prompt Dialog Modal
+  function openCustomPromptModal(onApply) {
+    const existingModal = document.getElementById('mailgenie-custom-modal');
+    if (existingModal) existingModal.remove();
 
-  function updateConnectionBadges() {
-    document.querySelectorAll('.mailgenie-status-badge').forEach(badge => {
-      const dot = badge.querySelector('.mailgenie-dot');
-      if (dot) {
-        dot.className = `mailgenie-dot ${isBackendConnected ? 'online' : 'offline'}`;
+    const backdrop = document.createElement('div');
+    backdrop.id = 'mailgenie-custom-modal';
+    backdrop.className = 'mailgenie-modal-backdrop';
+
+    const content = document.createElement('div');
+    content.className = 'mailgenie-modal-card';
+    content.innerHTML = `
+      <div class="mailgenie-modal-header">
+        <h3>✨ MailGenie Custom Prompt</h3>
+        <button class="mailgenie-modal-close">&times;</button>
+      </div>
+      <div class="mailgenie-modal-body">
+        <label for="mailgenie-custom-input">Specify custom instructions for AI reply:</label>
+        <textarea id="mailgenie-custom-input" placeholder="e.g. Thank them for the invite and propose meeting next Tuesday at 3 PM EST. Ask to send calendar invite."></textarea>
+      </div>
+      <div class="mailgenie-modal-footer">
+        <button class="mailgenie-btn mailgenie-btn-cancel">Cancel</button>
+        <button class="mailgenie-btn mailgenie-btn-primary mailgenie-btn-submit">Generate Reply</button>
+      </div>
+    `;
+
+    backdrop.appendChild(content);
+    document.body.appendChild(backdrop);
+
+    const input = content.querySelector('#mailgenie-custom-input');
+    input.focus();
+
+    const closeModal = () => backdrop.remove();
+
+    content.querySelector('.mailgenie-modal-close').addEventListener('click', closeModal);
+    content.querySelector('.mailgenie-btn-cancel').addEventListener('click', closeModal);
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) closeModal();
+    });
+
+    content.querySelector('.mailgenie-btn-submit').addEventListener('click', () => {
+      const promptText = input.value.trim();
+      if (promptText) {
+        closeModal();
+        onApply(promptText);
+      } else {
+        input.style.borderColor = '#ef4444';
       }
-      badge.title = isBackendConnected ? 'MailGenie Backend Online' : 'MailGenie Offline (Using Local Fallbacks)';
     });
   }
 
-  // Multi-tier Email Content Extraction
+  // Extract email thread content
   function getEmailContent(composeContainer) {
     const selectors = [
-      '.a3s.aiL',         // Standard email body container
-      '.gmail_quote',     // Quoted email thread
-      '.h7',              // Thread view wrapper
-      '[role="presentation"] .ii.gt', // Detailed view body
-      '.adn.ads'          // Expanded message element
+      '.a3s.aiL',
+      '.gmail_quote',
+      '.h7',
+      '[role="presentation"]',
+      '[data-message-id]'
     ];
 
     if (composeContainer) {
@@ -339,7 +356,6 @@
       }
     }
 
-    // Global fallback search
     for (const selector of selectors) {
       const contents = document.querySelectorAll(selector);
       if (contents.length > 0) {
@@ -352,191 +368,75 @@
     return '';
   }
 
-  // Clean raw email content to remove boilerplate footer quotes
   function cleanEmailText(text) {
     if (!text) return '';
     let cleaned = text.trim();
-    // Trim common email signatures or long inline quote dividers
-    const splitIndices = [
-      cleaned.indexOf('On ') && cleaned.indexOf(' wrote:'),
-      cleaned.indexOf('---------- Forwarded message ---------')
-    ];
-    
-    // Pick first valid split index if available
-    for (const idx of splitIndices) {
-      if (idx && idx > 50) {
-        cleaned = cleaned.substring(0, idx);
-      }
+    const splitIdx = cleaned.indexOf('On ') && cleaned.indexOf(' wrote:');
+    if (splitIdx && splitIdx > 50) {
+      cleaned = cleaned.substring(0, splitIdx);
     }
-
     return cleaned.trim();
   }
 
-  // Multi-tier Compose Box Locator
-  function findComposeBox(toolbar) {
-    const containers = [
-      '[role="dialog"]',
-      '.AD',
-      'form',
-      'table',
-      '.M9',
-      '.g3',
-      '.dw',
-      '.aaZ',
-      'body'
-    ];
-
-    for (const containerSelector of containers) {
-      const container = toolbar.closest(containerSelector);
-      if (container) {
-        const selectors = [
-          '[role="textbox"][contenteditable="true"]',
-          'div[aria-label*="Message Body"]',
-          '[role="textbox"][g_editable="true"]',
-          '[contenteditable="true"]',
-          '.editable'
-        ];
-        for (const selector of selectors) {
-          const box = container.querySelector(selector);
-          if (box) {
-            return { box, container };
-          }
-        }
+  // Locate compose window roots
+  function findComposeContainers() {
+    const containers = new Set();
+    const mainComposeBoxes = document.querySelectorAll('div[role="dialog"], form.aaq, .gM, .nH.if, .dw .g3');
+    mainComposeBoxes.forEach(box => {
+      if (box.querySelector('[role="textbox"][g_editable="true"]') || box.querySelector('.btC')) {
+        containers.add(box);
       }
-    }
-
-    const globalBox = document.querySelector('[role="textbox"][contenteditable="true"]') ||
-                      document.querySelector('[contenteditable="true"]');
-    if (globalBox) {
-      return { box: globalBox, container: document.body };
-    }
-
-    return { box: null, container: null };
-  }
-
-  // Multi-tier Toolbar Locator
-  function findComposeToolbars() {
-    const toolbars = new Set();
-
-    // Strategy 1: Standard Gmail toolbar container
-    document.querySelectorAll('.btC').forEach(el => toolbars.add(el));
-
-    // Strategy 2: Role="toolbar"
-    document.querySelectorAll('[role="toolbar"]').forEach(el => {
-      const target = el.closest('.btC') || el;
-      toolbars.add(target);
     });
 
-    // Strategy 3: Send button container
-    const sendButtons = document.querySelectorAll('div[data-tooltip*="Send"], div[aria-label*="Send"], [role="button"][aria-label*="Send"]');
+    const sendButtons = document.querySelectorAll('div[aria-label*="Send"], [role="button"][aria-label*="Send"]');
     sendButtons.forEach(btn => {
-      const parentToolbar = btn.closest('.btC') || btn.closest('.gU.Up') || btn.parentElement;
-      if (parentToolbar) {
-        toolbars.add(parentToolbar);
+      const parentDialog = btn.closest('[role="dialog"]') || btn.closest('form') || btn.closest('.gM') || btn.closest('.nH.if') || btn.closest('.btC')?.parentElement;
+      if (parentDialog) {
+        containers.add(parentDialog);
       }
     });
 
-    // Strategy 4: Inline reply bottom containers
-    document.querySelectorAll('.gU.Up').forEach(el => toolbars.add(el));
-
-    return Array.from(toolbars);
+    return Array.from(containers);
   }
 
-  // Text Insertion Engine with HTML preserving and event dispatching
-  function insertTextIntoComposer(composeBox, text, mode = 'prepend') {
-    if (!composeBox) return false;
+  // Prevent duplicate toolbar rendering
+  function cleanupDuplicateToolbars() {
+    const wrappers = document.querySelectorAll('.mailgenie-wrapper');
+    const seenContainers = new Set();
 
-    composeBox.focus();
-
-    // Store backup for Undo button
-    const originalContent = composeBox.innerHTML;
-    const parentContainer = composeBox.closest('[role="dialog"]') || composeBox.closest('.g3') || composeBox.parentElement;
-    if (parentContainer) {
-      undoMap.set(parentContainer, originalContent);
-    }
-
-    // Collapse selection to beginning of editor
-    try {
-      const selection = window.getSelection();
-      const range = document.createRange();
-      range.selectNodeContents(composeBox);
-      range.collapse(true);
-      selection.removeAllRanges();
-      selection.addRange(range);
-    } catch (e) {
-      console.warn("MailGenie: Selection range collapse warning", e);
-    }
-
-    let inserted = false;
-
-    // Method A: execCommand insertText
-    try {
-      inserted = document.execCommand('insertText', false, text);
-    } catch (e) {
-      inserted = false;
-    }
-
-    // Method B: Range API node insertion
-    if (!inserted) {
-      try {
-        const selection = window.getSelection();
-        let range;
-        if (selection.rangeCount > 0) {
-          range = selection.getRangeAt(0);
+    wrappers.forEach(wrapper => {
+      const parentContainer = wrapper.closest('[role="dialog"]') || wrapper.closest('form') || wrapper.closest('.gM') || wrapper.parentElement;
+      if (parentContainer) {
+        if (seenContainers.has(parentContainer)) {
+          wrapper.remove();
         } else {
-          range = document.createRange();
-          range.selectNodeContents(composeBox);
-          range.collapse(true);
-          selection.removeAllRanges();
-          selection.addRange(range);
+          seenContainers.add(parentContainer);
         }
-        range.deleteContents();
-        const textNode = document.createTextNode(text);
-        range.insertNode(textNode);
-        range.collapse(false);
-        selection.removeAllRanges();
-        selection.addRange(range);
-        inserted = true;
-      } catch (selErr) {
-        inserted = false;
       }
-    }
-
-    // Method C: InnerHTML formatting fallback
-    if (!inserted) {
-      const formattedHtml = text.replace(/\n/g, '<br>') + '<br><br>';
-      composeBox.innerHTML = formattedHtml + composeBox.innerHTML;
-      inserted = true;
-    }
-
-    // Dispatch synthetic events so Gmail recognizes text change
-    composeBox.dispatchEvent(new Event('input', { bubbles: true }));
-    composeBox.dispatchEvent(new Event('change', { bubbles: true }));
-    composeBox.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'a' }));
-
-    return inserted;
+    });
   }
 
-  // Core Injection Logic
-  async function injectControls() {
+  async function injectButton() {
     if (!checkContext()) return;
 
-    const toolbars = findComposeToolbars();
-    if (toolbars.length === 0) return;
+    cleanupDuplicateToolbars();
+
+    const composeContainers = findComposeContainers();
+    if (composeContainers.length === 0) return;
 
     const settings = await getSettings();
 
-    // Fetch templates asynchronously
-    if (!templatesFetched) {
-      fetchTemplates(settings.backendUrl).then(() => {
-        repopulateTemplateSelects();
-      });
-    }
+    composeContainers.forEach(container => {
+      if (container.getAttribute('data-mailgenie-injected') === 'true' || container.querySelector('.mailgenie-wrapper')) {
+        return;
+      }
 
-    toolbars.forEach(toolbar => {
+      const toolbar = container.querySelector('.btC') || container.querySelector('[role="toolbar"]') || container.querySelector('.gU.Up');
+      if (!toolbar) return;
       if (toolbar.querySelector('.mailgenie-wrapper')) return;
 
-      console.log("MailGenie: Injecting controls into toolbar");
+      container.setAttribute('data-mailgenie-injected', 'true');
+      console.log("MailGenie: Injecting unified toolbar control");
 
       const wrapper = document.createElement('div');
       wrapper.className = 'mailgenie-wrapper';
@@ -547,247 +447,199 @@
       }
 
       const button = createAIButton();
-      const undoBtn = createUndoButton();
+      const undoButton = createUndoButton();
       const toneSelect = createToneSelect(settings.defaultTone);
       const langSelect = createLanguageSelect(settings.defaultLanguage);
-      const templateSelect = createTemplateSelect('');
-      const statusBadge = createStatusBadge();
+      const templateSelect = createTemplateSelect();
+      const copyButton = createCopyButton();
 
-      wrapper.appendChild(statusBadge);
       wrapper.appendChild(button);
-      wrapper.appendChild(undoBtn);
+      wrapper.appendChild(undoButton);
       wrapper.appendChild(toneSelect);
       wrapper.appendChild(langSelect);
       wrapper.appendChild(templateSelect);
+      wrapper.appendChild(copyButton);
 
-      // Handle Template Selection
-      templateSelect.addEventListener('change', () => {
-        const tplBody = templateSelect.value;
-        if (!tplBody) return;
+      // Core Generation Handler
+      const executeGeneration = async (customPrompt = '') => {
+        const emailContent = getEmailContent(container);
+        if (!emailContent && !customPrompt) {
+          showToast('Could not find email thread content to reply to', 'error');
+          return;
+        }
 
-        const { box: composeBox, container } = findComposeBox(toolbar);
-        if (composeBox) {
-          const success = insertTextIntoComposer(composeBox, tplBody);
-          if (success) {
-            showToast('Template inserted successfully!', 'success', 3000);
-            if (container && undoMap.has(container)) {
-              undoBtn.style.display = 'inline-flex';
-            }
+        const composeBox = container.querySelector('[role="textbox"][g_editable="true"]') ||
+                           container.querySelector('[role="textbox"][contenteditable="true"]') ||
+                           container.querySelector('[contenteditable="true"]');
+
+        if (!composeBox) {
+          showToast('Could not locate email compose editor', 'error');
+          return;
+        }
+
+        const selectedTone = toneSelect.value || settings.defaultTone;
+        const selectedLang = langSelect.value || settings.defaultLanguage;
+
+        // UI Loading state
+        button.innerHTML = '<span class="mailgenie-btn-icon">⏳</span><span class="mailgenie-btn-text">Generating...</span>';
+        button.disabled = true;
+
+        try {
+          let responseData = null;
+
+          const bgResponse = await sendMessageToWorker({
+            action: 'GENERATE_EMAIL',
+            backendUrl: settings.backendUrl,
+            emailContent: emailContent || 'Generate email based on custom instructions',
+            tone: selectedTone,
+            provider: settings.provider,
+            model: settings.customModel,
+            language: selectedLang,
+            apiKey: settings.apiKey,
+            customInstructions: customPrompt
+          });
+
+          if (bgResponse && bgResponse.success && bgResponse.data) {
+            responseData = bgResponse.data;
+          } else {
+            // Direct fetch fallback
+            const res = await fetch(`${settings.backendUrl.replace(/\/$/, '')}/api/email/generate`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                emailContent: emailContent || 'Generate email based on custom instructions',
+                tone: selectedTone,
+                provider: settings.provider,
+                model: settings.customModel,
+                language: selectedLang,
+                apiKey: settings.apiKey,
+                customInstructions: customPrompt
+              })
+            });
+
+            if (!res.ok) throw new Error('API response failed');
+            responseData = await res.text();
+          }
+
+          if (responseData) {
+            // Save Undo snapshot
+            composeUndoStateMap.set(container, composeBox.innerHTML);
+            undoButton.disabled = false;
+            undoButton.classList.add('mailgenie-btn-active');
+
+            composeBox.focus();
+            document.execCommand('insertText', false, responseData);
+            showToast('AI Draft inserted successfully!', 'success');
+          }
+        } catch (err) {
+          console.error("MailGenie error:", err);
+          showToast('Failed to generate reply. Check backend settings.', 'error');
+        } finally {
+          button.innerHTML = '<span class="mailgenie-btn-icon">✨</span><span class="mailgenie-btn-text">AI Reply</span>';
+          button.disabled = false;
+        }
+      };
+
+      button.addEventListener('click', () => executeGeneration());
+
+      undoButton.addEventListener('click', () => {
+        const previousState = composeUndoStateMap.get(container);
+        if (previousState !== undefined) {
+          const composeBox = container.querySelector('[role="textbox"][g_editable="true"]') ||
+                             container.querySelector('[role="textbox"][contenteditable="true"]');
+          if (composeBox) {
+            composeBox.innerHTML = previousState;
+            composeUndoStateMap.delete(container);
+            undoButton.disabled = true;
+            undoButton.classList.remove('mailgenie-btn-active');
+            showToast('Restored previous draft state', 'undo');
           }
         }
-        templateSelect.value = '';
       });
 
-      // Handle Undo Action
-      undoBtn.addEventListener('click', () => {
-        const { box: composeBox, container } = findComposeBox(toolbar);
-        if (composeBox && container && undoMap.has(container)) {
-          composeBox.innerHTML = undoMap.get(container);
-          composeBox.dispatchEvent(new Event('input', { bubbles: true }));
-          undoBtn.style.display = 'none';
-          showToast('Restored previous text.', 'info', 2500);
+      copyButton.addEventListener('click', () => {
+        const composeBox = container.querySelector('[role="textbox"][g_editable="true"]') ||
+                           container.querySelector('[role="textbox"][contenteditable="true"]');
+        if (composeBox && composeBox.innerText.trim()) {
+          navigator.clipboard.writeText(composeBox.innerText);
+          showToast('Copied draft to clipboard!', 'success');
+        } else {
+          showToast('Compose window is empty', 'error');
         }
       });
 
-      // Handle AI Reply Button Click
-      button.addEventListener('click', async () => {
-        executeAIGeneration(toolbar, button, toneSelect, langSelect, templateSelect, undoBtn);
+      templateSelect.addEventListener('change', (e) => {
+        const val = e.target.value;
+        if (!val) return;
+
+        if (val === 'custom_prompt') {
+          openCustomPromptModal((customText) => {
+            executeGeneration(customText);
+          });
+          e.target.value = '';
+          return;
+        }
+
+        const composeBox = container.querySelector('[role="textbox"][g_editable="true"]') ||
+                           container.querySelector('[role="textbox"][contenteditable="true"]');
+
+        if (composeBox) {
+          composeUndoStateMap.set(container, composeBox.innerHTML);
+          undoButton.disabled = false;
+          undoButton.classList.add('mailgenie-btn-active');
+
+          let textToInsert = '';
+          if (val === 'thank_confirm') textToInsert = 'Thank you for your email. I confirm receipt and agree with the details provided.';
+          else if (val === 'schedule_meeting') textToInsert = 'Thanks for reaching out! I would be glad to meet. Please let me know your available time slots.';
+          else if (val === 'polite_decline') textToInsert = 'Thank you for considering me. Unfortunately, I am unable to participate at this time.';
+          else if (val === 'request_info') textToInsert = 'Thank you for the update. Could you please share more details regarding the next steps?';
+          else if (val === 'follow_up') textToInsert = 'Hi, just following up on my previous email. Looking forward to hearing from you.';
+
+          composeBox.focus();
+          document.execCommand('insertText', false, textToInsert);
+          showToast('Template preset inserted!', 'success');
+        }
+        e.target.value = '';
       });
 
-      // Insert controls into toolbar
-      if (toolbar.firstChild) {
-        toolbar.insertBefore(wrapper, toolbar.firstChild);
+      // Insert toolbar before send button
+      const sendButtonWrapper = toolbar.querySelector('.gU.Up') || toolbar.firstChild;
+      if (sendButtonWrapper) {
+        toolbar.insertBefore(wrapper, sendButtonWrapper);
       } else {
         toolbar.appendChild(wrapper);
       }
     });
   }
 
-  // AI Reply Execution Workflow
-  async function executeAIGeneration(toolbar, button, toneSelect, langSelect, templateSelect, undoBtn) {
-    if (!checkContext()) {
-      showToast('MailGenie: Extension was reloaded. Please refresh Gmail tab.', 'warning');
-      return;
-    }
-
-    const settings = await getSettings();
-    const { box: composeBox, container: composeContainer } = findComposeBox(toolbar);
-
-    let emailContent = getEmailContent(composeContainer);
-    let isComposeMode = false;
-
-    if (!emailContent) {
-      if (composeBox && composeBox.innerText.trim()) {
-        emailContent = composeBox.innerText.trim();
-        isComposeMode = true;
-      }
-    }
-
-    if (!emailContent) {
-      showToast('Please open an email thread or type a prompt in the box to generate a reply.', 'warning', 5000);
-      return;
-    }
-
-    // Set Loading UI state
-    button.disabled = true;
-    toneSelect.disabled = true;
-    langSelect.disabled = true;
-    templateSelect.disabled = true;
-
-    const labelSpan = button.querySelector('.mailgenie-btn-label');
-    const sparkleSpan = button.querySelector('.mailgenie-btn-sparkle');
-    if (labelSpan) labelSpan.textContent = 'Drafting...';
-    if (sparkleSpan) sparkleSpan.className = 'mailgenie-btn-sparkle mailgenie-spin';
-
-    try {
-      const response = await sendMessageToWorker({
-        action: 'GENERATE_EMAIL',
-        emailContent: emailContent,
-        tone: toneSelect.value || settings.defaultTone,
-        provider: settings.provider,
-        model: settings.customModel,
-        language: langSelect.value || settings.defaultLanguage,
-        apiKey: settings.apiKey,
-        composeMode: isComposeMode,
-        backendUrl: settings.backendUrl
-      });
-
-      if (response && response.success && response.reply) {
-        if (composeBox) {
-          insertTextIntoComposer(composeBox, response.reply);
-          showToast('✨ AI Reply generated successfully!', 'success', 3500);
-          if (composeContainer && undoMap.has(composeContainer)) {
-            undoBtn.style.display = 'inline-flex';
-          }
-        } else {
-          showToast('Generated reply copied to clipboard!', 'info', 4000);
-          navigator.clipboard.writeText(response.reply);
-        }
-      } else {
-        const errorMsg = (response && response.error) ? response.error : 'Failed to generate reply.';
-        showToast(errorMsg, 'error', 6000);
-      }
-
-    } catch (err) {
-      console.error("MailGenie: Generation Exception", err);
-      showToast('Error generating reply: ' + err.message, 'error', 6000);
-    } finally {
-      button.disabled = false;
-      toneSelect.disabled = false;
-      langSelect.disabled = false;
-      templateSelect.disabled = false;
-      if (labelSpan) labelSpan.textContent = 'AI Reply';
-      if (sparkleSpan) sparkleSpan.className = 'mailgenie-btn-sparkle';
-    }
-  }
-
-  // Floating Action Button (FAB) Fallback if Toolbar is inaccessible
-  function injectFloatingActionButton() {
-    if (document.getElementById('mailgenie-fab')) return;
-
-    const fab = document.createElement('button');
-    fab.id = 'mailgenie-fab';
-    fab.className = 'mailgenie-fab-btn';
-    fab.title = 'MailGenie Quick AI Assistant (Ctrl+Shift+G)';
-    fab.innerHTML = '💌 ✨';
-
-    fab.addEventListener('click', () => {
-      const toolbars = findComposeToolbars();
-      if (toolbars.length > 0) {
-        const toolbar = toolbars[0];
-        const wrapper = toolbar.querySelector('.mailgenie-wrapper');
-        if (wrapper) {
-          const btn = wrapper.querySelector('.mailgenie-btn');
-          if (btn) btn.click();
-        } else {
-          injectControls();
-        }
-      } else {
-        showToast('Please open a Gmail compose or reply window first.', 'info');
-      }
-    });
-
-    document.body.appendChild(fab);
-  }
-
-  // Keyboard Shortcut Handler (Ctrl+Shift+G or Alt+G)
+  // Keyboard shortcut listener (Ctrl+Shift+G)
   document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'g') || (e.altKey && e.key.toLowerCase() === 'g')) {
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'g') {
       const activeEl = document.activeElement;
-      if (activeEl && (activeEl.isContentEditable || activeEl.getAttribute('role') === 'textbox')) {
-        e.preventDefault();
-        const toolbar = activeEl.closest('[role="dialog"]') || activeEl.closest('.g3') || document.querySelector('.btC');
-        if (toolbar) {
-          const wrapper = toolbar.querySelector('.mailgenie-wrapper') || document.querySelector('.mailgenie-wrapper');
-          if (wrapper) {
-            const btn = wrapper.querySelector('.mailgenie-btn');
-            if (btn) btn.click();
-          }
+      if (activeEl) {
+        const container = activeEl.closest('[role="dialog"]') || activeEl.closest('form') || activeEl.closest('.gM');
+        if (container) {
+          const aiBtn = container.querySelector('.mailgenie-btn-primary');
+          if (aiBtn) aiBtn.click();
         }
       }
     }
   });
 
-  // Observe Gmail DOM Mutations with Throttling
-  let observerTimeout = null;
+  // Debounced Observer for Gmail SPA Mutations
+  let observerTimer = null;
   const observer = new MutationObserver(() => {
-    if (!checkContext()) {
-      observer.disconnect();
-      return;
-    }
-
-    if (observerTimeout) clearTimeout(observerTimeout);
-    observerTimeout = setTimeout(() => {
-      injectControls();
+    if (observerTimer) clearTimeout(observerTimer);
+    observerTimer = setTimeout(() => {
+      injectButton();
     }, 250);
   });
 
-  // Initialize Observers and Setup
-  function init() {
-    if (!checkContext()) return;
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
 
-    injectControls();
-    injectFloatingActionButton();
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-
-    // Fallback interval for quick SPA transitions
-    const interval = setInterval(() => {
-      if (!checkContext()) {
-        clearInterval(interval);
-        observer.disconnect();
-        return;
-      }
-      injectControls();
-    }, 1500);
-  }
-
-  // Listen for storage setting changes
-  if (checkContext() && chrome.storage && chrome.storage.onChanged) {
-    chrome.storage.onChanged.addListener((changes, areaName) => {
-      if (areaName === 'local') {
-        getSettings().then(settings => {
-          document.querySelectorAll('.mailgenie-tone-select').forEach(sel => sel.value = settings.defaultTone);
-          document.querySelectorAll('.mailgenie-lang-select').forEach(sel => sel.value = settings.defaultLanguage);
-
-          if (changes.backendUrl || changes.customTemplates) {
-            templatesFetched = false;
-            fetchTemplates(settings.backendUrl).then(() => {
-              repopulateTemplateSelects();
-            });
-          }
-        });
-      }
-    });
-  }
-
-  // Run Script
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  // Initial trigger
+  injectButton();
 })();
