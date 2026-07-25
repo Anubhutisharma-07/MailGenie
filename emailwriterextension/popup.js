@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   const backendUrlInput = document.getElementById('backendUrl');
+  const testConnBtn = document.getElementById('testConnBtn');
   const providerSelect = document.getElementById('provider');
   const apiKeyInput = document.getElementById('apiKey');
   const defaultToneSelect = document.getElementById('defaultTone');
@@ -8,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const saveBtn = document.getElementById('saveBtn');
   const statusMsg = document.getElementById('status');
   const serverStatus = document.getElementById('serverStatus');
+  const statusBox = document.querySelector('.server-status-box');
 
   // Load saved configurations
   chrome.storage.local.get({
@@ -25,7 +27,6 @@ document.addEventListener('DOMContentLoaded', () => {
     defaultLanguageSelect.value = items.defaultLanguage;
     customModelInput.value = items.customModel;
     
-    // Check server status and provider configurations immediately on load
     checkServerStatus(items.backendUrl);
   });
 
@@ -33,7 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
   saveBtn.addEventListener('click', () => {
     let backendUrl = backendUrlInput.value.trim() || 'http://localhost:8080';
     
-    // Auto-prepend protocol if missing
     if (backendUrl && !/^https?:\/\//i.test(backendUrl)) {
       backendUrl = 'http://' + backendUrl;
     }
@@ -53,10 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
       defaultLanguage,
       customModel
     }, () => {
-      // Show success indicator
       statusMsg.classList.remove('hide');
-      
-      // Recheck server status
       checkServerStatus(backendUrl);
 
       setTimeout(() => {
@@ -65,12 +62,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Helper to ping backend server status and fetch active configurations
-  function checkServerStatus(url) {
-    serverStatus.textContent = 'Checking...';
-    serverStatus.className = 'status-indicator';
+  // Test connection button
+  testConnBtn.addEventListener('click', () => {
+    let backendUrl = backendUrlInput.value.trim() || 'http://localhost:8080';
+    if (backendUrl && !/^https?:\/\//i.test(backendUrl)) {
+      backendUrl = 'http://' + backendUrl;
+    }
+    checkServerStatus(backendUrl);
+  });
 
-    // Remove trailing slash if present
+  // Ping backend server status
+  function checkServerStatus(url) {
+    serverStatus.textContent = 'Checking server connection...';
+    statusBox.className = 'server-status-box';
+
     const cleanUrl = url.endsWith('/') ? url.slice(0, -1) : url;
 
     fetch(`${cleanUrl}/api/email/config`)
@@ -78,32 +83,30 @@ document.addEventListener('DOMContentLoaded', () => {
         if (response.ok) {
           return response.json();
         }
-        throw new Error('API server returned error status');
+        throw new Error('API server unreachable');
       })
       .then(config => {
-        serverStatus.textContent = 'Online';
-        serverStatus.className = 'status-indicator status-online';
+        serverStatus.textContent = 'Server Online & Ready';
+        statusBox.className = 'server-status-box status-online';
         updateProviderOptions(config);
       })
       .catch(() => {
-        serverStatus.textContent = 'Offline';
-        serverStatus.className = 'status-indicator status-offline';
+        serverStatus.textContent = 'Server Offline (check Backend)';
+        statusBox.className = 'server-status-box status-offline';
         updateProviderOptions(null);
       });
   }
 
-  // Label options based on their configuration state in the backend
   function updateProviderOptions(config) {
     const options = providerSelect.options;
     for (let i = 0; i < options.length; i++) {
       const opt = options[i];
       const provider = opt.value;
       
-      // Clean previous suffixes
       let label = opt.text.replace(/ \(Configured\)| \(Key Missing\)| \(Offline\)/g, '');
       
       if (!config) {
-        opt.text = label; // Reset on error
+        opt.text = label;
         opt.style.color = '';
         continue;
       }
@@ -111,10 +114,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const isConfigured = config[provider] || false;
       if (isConfigured) {
         opt.text = label + ' (Configured)';
-        opt.style.color = '#10b981'; // Green
+        opt.style.color = '#10b981';
       } else {
         opt.text = label + ' (Key Missing)';
-        opt.style.color = '#f55036'; // Red
+        opt.style.color = '#f55036';
       }
     }
   }

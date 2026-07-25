@@ -1,4 +1,4 @@
-/* MailGenie Options Popup Stylesheet */
+/* MailGenie Premium Popup Options Stylesheet */
 
 :root {
   --bg-color: #0b0f19;
@@ -7,20 +7,23 @@
   --text-secondary: #94a3b8;
   --accent-color: #6366f1;
   --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-  --border-color: rgba(255, 255, 255, 0.08);
+  --border-color: rgba(255, 255, 255, 0.1);
+  --success-color: #10b981;
+  --error-color: #ef4444;
 }
 
 body {
   margin: 0;
   padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background-color: var(--bg-color);
   color: var(--text-primary);
-  width: 320px;
+  width: 340px;
+  box-sizing: border-box;
 }
 
 .popup-container {
-  padding: 16px;
+  padding: 18px;
   box-sizing: border-box;
 }
 
@@ -32,15 +35,25 @@ body {
   padding-bottom: 12px;
 }
 
+.logo-wrapper {
+  width: 44px;
+  height: 44px;
+  background: var(--accent-gradient);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 8px auto;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+}
+
 .logo {
-  font-size: 28px;
-  display: block;
-  margin-bottom: 4px;
+  font-size: 22px;
 }
 
 .title {
   margin: 0;
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 700;
   background: var(--accent-gradient);
   -webkit-background-clip: text;
@@ -50,6 +63,8 @@ body {
 .subtitle {
   font-size: 11px;
   color: var(--text-secondary);
+  display: block;
+  margin-top: 2px;
 }
 
 /* Form Container */
@@ -59,58 +74,92 @@ body {
   gap: 12px;
 }
 
+.form-row {
+  display: flex;
+  gap: 10px;
+}
+
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
+}
+
+.form-group.half {
+  flex: 1;
 }
 
 label {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-input[type="text"], select {
+input[type="text"], input[type="password"], select {
   background-color: var(--card-bg);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
   border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 13px;
+  padding: 8px 10px;
+  font-size: 12.5px;
   outline: none;
   transition: all 0.2s ease;
+  box-sizing: border-box;
+  width: 100%;
 }
 
-input[type="text"]:focus, select:focus {
+input[type="text"]:focus, input[type="password"]:focus, select:focus {
   border-color: var(--accent-color);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
 }
 
+.input-with-button {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-sm {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-sm:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: var(--accent-color);
+}
+
 /* Save Button */
-.btn {
+.btn-primary {
   background: var(--accent-gradient);
   color: #ffffff;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 10px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 10px rgba(99, 102, 241, 0.25);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
   transition: all 0.2s ease;
   margin-top: 6px;
+  width: 100%;
 }
 
-.btn:hover {
+.btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 14px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
   filter: brightness(1.05);
 }
 
-.btn:active {
+.btn-primary:active {
   transform: translateY(0);
 }
 
@@ -121,7 +170,7 @@ input[type="text"]:focus, select:focus {
   border: 1px solid rgba(16, 185, 129, 0.3);
   font-size: 12px;
   padding: 8px;
-  border-radius: 6px;
+  border-radius: 8px;
   text-align: center;
   transition: all 0.3s ease;
 }
@@ -133,24 +182,37 @@ input[type="text"]:focus, select:focus {
 
 /* Footer & Live Server Indicator */
 .footer {
-  margin-top: 16px;
+  margin-top: 14px;
   border-top: 1px solid var(--border-color);
-  padding-top: 12px;
+  padding-top: 10px;
   font-size: 11px;
-  color: var(--text-secondary);
+}
+
+.server-status-box {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #6b7280;
+}
+
+.status-online .status-dot {
+  background-color: var(--success-color);
+  box-shadow: 0 0 8px var(--success-color);
+}
+
+.status-offline .status-dot {
+  background-color: var(--error-color);
+  box-shadow: 0 0 8px var(--error-color);
 }
 
 .status-indicator {
-  font-weight: 600;
-}
-
-.status-online {
-  color: #10b981;
-}
-
-.status-offline {
-  color: #f55036;
+  color: var(--text-secondary);
+  font-weight: 500;
 }
