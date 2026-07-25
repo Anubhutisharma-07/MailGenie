@@ -587,8 +587,7 @@ console.log("MailGenie Extension - Content Script Loaded v2.1");
       undoButton.addEventListener('click', () => {
         const previousState = composeUndoStateMap.get(container);
         if (previousState !== undefined) {
-          const composeBox = container.querySelector('[role="textbox"][g_editable="true"]') ||
-                             container.querySelector('[role="textbox"][contenteditable="true"]');
+          const composeBox = getComposeEditor(container);
           if (composeBox) {
             composeBox.innerHTML = previousState;
             composeUndoStateMap.delete(container);
@@ -600,8 +599,7 @@ console.log("MailGenie Extension - Content Script Loaded v2.1");
       });
 
       copyButton.addEventListener('click', () => {
-        const composeBox = container.querySelector('[role="textbox"][g_editable="true"]') ||
-                           container.querySelector('[role="textbox"][contenteditable="true"]');
+        const composeBox = getComposeEditor(container);
         if (composeBox && composeBox.innerText.trim()) {
           navigator.clipboard.writeText(composeBox.innerText);
           showToast('Copied draft to clipboard!', 'success');
@@ -622,8 +620,7 @@ console.log("MailGenie Extension - Content Script Loaded v2.1");
           return;
         }
 
-        const composeBox = container.querySelector('[role="textbox"][g_editable="true"]') ||
-                           container.querySelector('[role="textbox"][contenteditable="true"]');
+        const composeBox = getComposeEditor(container);
 
         if (composeBox) {
           composeUndoStateMap.set(container, composeBox.innerHTML);
@@ -640,6 +637,8 @@ console.log("MailGenie Extension - Content Script Loaded v2.1");
           composeBox.focus();
           document.execCommand('insertText', false, textToInsert);
           showToast('Template preset inserted!', 'success');
+        } else {
+          showToast('Could not locate email compose editor', 'error');
         }
         e.target.value = '';
       });
