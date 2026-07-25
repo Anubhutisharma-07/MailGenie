@@ -1,23 +1,32 @@
 import { useState, useEffect } from 'react';
 import './App.css';
-import { 
-  Box, 
-  Button, 
-  CircularProgress, 
-  Container, 
-  FormControl, 
-  InputLabel, 
-  MenuItem, 
-  Select, 
-  TextField, 
-  Typography, 
-  Paper, 
-  Card, 
-  CardContent, 
-  Divider, 
-  IconButton, 
-  Switch, 
-  FormControlLabel, 
+import Footer from './components/Footer';
+import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
+import GuidelinesPage from './pages/GuidelinesPage';
+import HelpPage from './pages/HelpPage';
+import TermsPage from './pages/TermsPage';
+import PrivacyPage from './pages/PrivacyPage';
+import SecurityPage from './pages/SecurityPage';
+
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Container,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  TextField,
+  Typography,
+  Paper,
+  Card,
+  CardContent,
+  Divider,
+  IconButton,
+  Switch,
+  FormControlLabel,
   Grid,
   InputAdornment,
   Drawer,
@@ -159,7 +168,7 @@ function App() {
       const response = await axios.get(`${backendUrl}/api/email/config`);
       setProviderConfig(response.data);
       setBackendOnline(true);
-      
+      // Auto select first configured provider
       if (response.data) {
         if (response.data.groq) setProvider('groq');
         else if (response.data.openai) setProvider('openai');
@@ -203,9 +212,9 @@ function App() {
         language
       });
       const reply = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
-      setGeneratedReply(reply);
       showNotification('AI Reply generated successfully!', 'success');
-      
+
+      // Refresh history list
       const histRes = await axios.get(`${backendUrl}/api/history`);
       setHistoryList(histRes.data);
     } catch (err) {
@@ -424,17 +433,17 @@ function App() {
           AI EMAIL WRITING SUITE v1.1
         </Typography>
       </Box>
-      
+
       <List sx={{ px: 2, py: 3, flexGrow: 1 }}>
         {navigationItems.map((item) => (
           <ListItem key={item.id} disablePadding sx={{ mb: 1 }}>
-            <ListItemButton 
+            <ListItemButton
               onClick={() => {
                 setActiveTab(item.id);
                 if (isMobile) setMobileOpen(false);
               }}
               className={activeTab === item.id ? "sidebar-item-active" : "sidebar-item"}
-              sx={{ 
+              sx={{
                 borderRadius: '12px',
                 py: 1.4,
                 px: 2,
@@ -444,8 +453,8 @@ function App() {
               <ListItemIcon sx={{ minWidth: 36, fontSize: '1.2rem' }}>
                 {item.icon}
               </ListItemIcon>
-              <ListItemText 
-                primary={item.label} 
+              <ListItemText
+                primary={item.label}
                 primaryTypographyProps={{ fontSize: '0.95rem', fontWeight: activeTab === item.id ? 700 : 500 }}
               />
             </ListItemButton>
@@ -473,10 +482,10 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Box sx={{ display: 'flex', minHeight: '100vh' }}>
-        
+
         {/* Responsive Mobile Drawer */}
         {isMobile && (
-          <IconButton 
+          <IconButton
             onClick={() => setMobileOpen(true)}
             sx={{ position: 'fixed', top: 16, left: 16, zIndex: 1100, bgcolor: 'background.paper', boxShadow: 1 }}
           >
@@ -491,8 +500,8 @@ function App() {
           sx={{
             width: drawerWidth,
             flexShrink: 0,
-            [`& .MuiDrawer-paper`]: { 
-              width: drawerWidth, 
+            [`& .MuiDrawer-paper`]: {
+              width: drawerWidth,
               boxSizing: 'border-box',
               borderRight: '1px solid rgba(255, 255, 255, 0.08)',
               background: isDarkMode ? 'linear-gradient(180deg, #090d16 0%, #0e1628 100%)' : '#ffffff'
@@ -505,7 +514,7 @@ function App() {
         {/* Main Content Area */}
         <Box component="main" sx={{ flexGrow: 1, p: 4, width: { md: `calc(100% - ${drawerWidth}px)` }, pt: isMobile ? 8 : 4 }}>
           <Container maxWidth="lg">
-            
+
             {/* TAB: GENERATOR */}
             {activeTab === 'generator' && (
               <Box>
@@ -536,7 +545,6 @@ function App() {
                   <Grid item xs={12} md={compareMode ? 5 : 7}>
                     <Paper className="glass-card" sx={{ p: 4 }}>
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                        
                         <Box>
                           <TextField 
                             fullWidth
@@ -909,9 +917,9 @@ Custom Directives: ${studioCustomInstruction || 'None'}
                               {new Date(item.createdAt).toLocaleString()}
                             </Typography>
                           </Box>
-                          <IconButton 
-                            color="error" 
-                            size="small" 
+                          <IconButton
+                            color="error"
+                            size="small"
                             onClick={() => handleDeleteHistory(item.id)}
                             title="Delete entry"
                           >
@@ -922,14 +930,14 @@ Custom Directives: ${studioCustomInstruction || 'None'}
                         <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
                           ✉️ Original Context:
                         </Typography>
-                        <Typography variant="body2" sx={{ 
-                          whiteSpace: 'pre-wrap', 
-                          backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : '#f8fafc', 
-                          p: 2, 
-                          borderRadius: 2.5, 
-                          mb: 2, 
+                        <Typography variant="body2" sx={{
+                          whiteSpace: 'pre-wrap',
+                          backgroundColor: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : '#f8fafc',
+                          p: 2,
+                          borderRadius: 2.5,
+                          mb: 2,
                           color: 'text.secondary',
-                          fontSize: '0.85rem' 
+                          fontSize: '0.85rem'
                         }}>
                           {item.originalContent}
                         </Typography>
@@ -937,12 +945,12 @@ Custom Directives: ${studioCustomInstruction || 'None'}
                         <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main', mb: 0.5 }}>
                           🤖 AI Reply Draft:
                         </Typography>
-                        <Typography variant="body2" sx={{ 
-                          whiteSpace: 'pre-wrap', 
-                          backgroundColor: isDarkMode ? 'rgba(99, 102, 241, 0.08)' : '#eef2ff', 
-                          p: 2, 
-                          borderRadius: 2.5, 
-                          mb: 2, 
+                        <Typography variant="body2" sx={{
+                          whiteSpace: 'pre-wrap',
+                          backgroundColor: isDarkMode ? 'rgba(99, 102, 241, 0.08)' : '#eef2ff',
+                          p: 2,
+                          borderRadius: 2.5,
+                          mb: 2,
                           color: 'text.primary',
                           fontSize: '0.85rem'
                         }}>
@@ -1008,7 +1016,7 @@ Custom Directives: ${studioCustomInstruction || 'None'}
                       </Typography>
                       <Divider sx={{ my: 2 }} />
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-                        <TextField 
+                        <TextField
                           fullWidth
                           size="small"
                           label="Template Title"
@@ -1016,7 +1024,7 @@ Custom Directives: ${studioCustomInstruction || 'None'}
                           value={newTemplateTitle}
                           onChange={(e) => setNewTemplateTitle(e.target.value)}
                         />
-                        <TextField 
+                        <TextField
                           fullWidth
                           multiline
                           rows={6}
@@ -1025,8 +1033,8 @@ Custom Directives: ${studioCustomInstruction || 'None'}
                           value={newTemplateBody}
                           onChange={(e) => setNewTemplateBody(e.target.value)}
                         />
-                        <Button 
-                          variant="contained" 
+                        <Button
+                          variant="contained"
                           onClick={handleAddTemplate}
                           disabled={!newTemplateTitle || !newTemplateBody}
                           fullWidth
@@ -1049,19 +1057,19 @@ Custom Directives: ${studioCustomInstruction || 'None'}
                                 <Typography variant="h6" sx={{ fontSize: '1rem', fontWeight: 700 }}>
                                   {template.title}
                                 </Typography>
-                                <IconButton 
-                                  size="small" 
-                                  color="error" 
+                                <IconButton
+                                  size="small"
+                                  color="error"
                                   onClick={() => handleDeleteTemplate(template.id)}
                                 >
                                   🗑️
                                 </IconButton>
                               </Box>
-                              <Typography 
-                                variant="body2" 
-                                sx={{ 
-                                  color: 'text.secondary', 
-                                  whiteSpace: 'pre-wrap', 
+                              <Typography
+                                variant="body2"
+                                sx={{
+                                  color: 'text.secondary',
+                                  whiteSpace: 'pre-wrap',
                                   mb: 2.5,
                                   fontSize: '0.82rem',
                                   overflow: 'hidden',
@@ -1073,10 +1081,10 @@ Custom Directives: ${studioCustomInstruction || 'None'}
                               >
                                 {template.body}
                               </Typography>
-                              <Button 
-                                variant="outlined" 
-                                size="small" 
-                                fullWidth 
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                fullWidth
                                 onClick={() => handleUseTemplate(template.body)}
                                 sx={{ textTransform: 'none', borderRadius: 2 }}
                               >
@@ -1118,7 +1126,7 @@ Custom Directives: ${studioCustomInstruction || 'None'}
                       </Typography>
                     </Paper>
                   </Grid>
-                  
+
                   <Grid item xs={12} sm={6} md={3}>
                     <Paper className="glass-card" sx={{ p: 3, textAlign: 'center' }}>
                       <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 700 }}>
@@ -1169,7 +1177,7 @@ Custom Directives: ${studioCustomInstruction || 'None'}
                         🤖 LLM Provider Usage Distribution
                       </Typography>
                       <Divider sx={{ my: 2 }} />
-                      
+
                       {totalGenerated > 0 ? (
                         <Box sx={{ mt: 4, display: 'flex', flexDirection: 'column', gap: 3 }}>
                           {['groq', 'openai', 'gemini', 'claude'].map(p => {
@@ -1186,14 +1194,14 @@ Custom Directives: ${studioCustomInstruction || 'None'}
                                   </Typography>
                                 </Box>
                                 <Box sx={{ width: '100%', height: 12, bgcolor: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : '#e2e8f0', borderRadius: 6, overflow: 'hidden' }}>
-                                  <Box 
-                                    sx={{ 
-                                      width: `${pct}%`, 
-                                      height: '100%', 
+                                  <Box
+                                    sx={{
+                                      width: `${pct}%`,
+                                      height: '100%',
                                       background: p === 'groq' ? '#f55036' : p === 'openai' ? '#10a37f' : p === 'gemini' ? '#1a73e8' : '#d97706',
                                       borderRadius: 6,
                                       transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
-                                    }} 
+                                    }}
                                   />
                                 </Box>
                               </Box>
@@ -1271,7 +1279,7 @@ Custom Directives: ${studioCustomInstruction || 'None'}
                       <Divider sx={{ my: 2 }} />
 
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                        <TextField 
+                        <TextField
                           fullWidth
                           label="Spring Boot Server URL"
                           value={backendUrl}
@@ -1293,8 +1301,8 @@ Custom Directives: ${studioCustomInstruction || 'None'}
                           </span>
                         </Box>
 
-                        <Button 
-                          variant="outlined" 
+                        <Button
+                          variant="outlined"
                           onClick={checkBackendHealth}
                           fullWidth
                           sx={{ py: 1.2, borderRadius: 2 }}
@@ -1334,6 +1342,51 @@ Custom Directives: ${studioCustomInstruction || 'None'}
               </Box>
             )}
 
+            {activeTab === 'about' && (
+              <AboutPage onBack={() => setActiveTab('generator')} />
+            )}
+
+            {activeTab === 'contact' && (
+              <ContactPage onBack={() => setActiveTab('generator')} />
+            )}
+
+            {activeTab === 'guidelines' && (
+              <GuidelinesPage onBack={() => setActiveTab('generator')} />
+            )}
+
+            {activeTab === 'help' && (
+              <HelpPage onBack={() => setActiveTab('generator')} />
+            )}
+
+            {activeTab === 'terms' && (
+              <TermsPage onBack={() => setActiveTab('generator')} />
+            )}
+
+            {activeTab === 'privacy' && (
+              <PrivacyPage onBack={() => setActiveTab('generator')} />
+            )}
+
+            {activeTab === 'security' && (
+              <SecurityPage onBack={() => setActiveTab('generator')} />
+            )}
+
+            {['blog', 'careers', 'guides'].includes(activeTab) && (
+              <Box sx={{ py: 6, textAlign: 'center' }}>
+                <Paper className="glass-card" sx={{ p: 6, maxWidth: 600, mx: 'auto' }}>
+                  <Typography variant="h4" gutterBottom className="app-title">
+                    🚧 Page Under Construction
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+                    The <strong>{activeTab.toUpperCase()}</strong> page is currently being designed and will be implemented in the next phase.
+                  </Typography>
+                  <Button variant="contained" className="gradient-btn" onClick={() => setActiveTab('generator')}>
+                    Back to Generator
+                  </Button>
+                </Paper>
+              </Box>
+            )}
+
+            <Footer onNavigate={(page) => setActiveTab(page)} />
           </Container>
         </Box>
       </Box>

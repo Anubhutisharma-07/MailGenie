@@ -4,19 +4,28 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="popup.css">
-  <title>MailGenie Settings</title>
+  <title>MailGenie Control Center</title>
 </head>
 <body>
   <div class="popup-container">
     <header class="header">
-      <div class="logo-wrapper">
+      <div class="header-brand">
         <span class="logo">💌</span>
+        <div>
+          <h1 class="title">MailGenie AI</h1>
+          <span class="subtitle">Smart Email Assistant v2.0</span>
+        </div>
       </div>
-      <h1 class="title">MailGenie AI</h1>
-      <span class="subtitle">Smart Email Reply Assistant for Gmail</span>
+
+      <nav class="tab-nav">
+        <button class="tab-btn active" data-tab="tab-settings">⚙️ Settings</button>
+        <button class="tab-btn" data-tab="tab-templates">📂 Templates</button>
+        <button class="tab-btn" data-tab="tab-diagnostics">⚡ Diagnostics</button>
+      </nav>
     </header>
 
-    <main class="form-container">
+    <!-- Tab 1: Settings -->
+    <main id="tab-settings" class="tab-content active">
       <div class="form-group">
         <label for="backendUrl">Backend API Server URL</label>
         <div class="input-with-button">
@@ -77,17 +86,60 @@
       </div>
 
       <button id="saveBtn" class="btn btn-primary">Save Settings</button>
-      
+
       <div id="status" class="status-msg hide">
         Configuration saved successfully!
       </div>
     </main>
 
-    <footer class="footer">
-      <div class="server-status-box">
-        <span class="status-dot"></span>
-        <span id="serverStatus" class="status-indicator">Checking backend status...</span>
+    <!-- Tab 2: Custom Templates Manager -->
+    <main id="tab-templates" class="tab-content">
+      <div class="section-title">Add Custom Template</div>
+      <div class="form-group">
+        <input type="text" id="tplTitleInput" placeholder="Template Title (e.g. Project Update)" />
       </div>
+      <div class="form-group">
+        <textarea id="tplBodyInput" rows="3" placeholder="Template Content Body..."></textarea>
+      </div>
+      <button id="addTplBtn" class="btn btn-secondary">+ Save Custom Template</button>
+
+      <div class="section-title margin-top-md">My Custom Templates</div>
+      <div id="customTemplatesList" class="templates-list">
+        <div class="empty-state">No custom templates saved yet.</div>
+      </div>
+    </main>
+
+    <!-- Tab 3: Diagnostics & Ping -->
+    <main id="tab-diagnostics" class="tab-content">
+      <div class="diag-card">
+        <div class="diag-item">
+          <span>Server Status:</span>
+          <span id="diagServerStatus" class="status-indicator">Checking...</span>
+        </div>
+        <div class="diag-item">
+          <span>Latency:</span>
+          <span id="diagLatency" class="stat-value">-- ms</span>
+        </div>
+        <div class="diag-item">
+          <span>Active Extension Mode:</span>
+          <span class="stat-value">MV3 Service Worker</span>
+        </div>
+      </div>
+
+      <button id="pingBtn" class="btn btn-outline margin-top-md">⚡ Run Diagnostic Ping</button>
+
+      <div class="section-title margin-top-md">Provider API Key Status</div>
+      <div id="providerConfigList" class="provider-status-list">
+        <div class="loading-state">Checking backend status...</div>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-status">
+        <span class="footer-dot" id="footerDot"></span>
+        <span id="serverStatus" class="status-indicator">Checking backend...</span>
+      </div>
+      <a href="https://github.com/dipanshubatra/MailGenie" target="_blank" class="footer-link">GitHub Docs</a>
     </footer>
   </div>
 

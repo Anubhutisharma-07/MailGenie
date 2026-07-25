@@ -1,4 +1,4 @@
-/* MailGenie Premium Injected Gmail Toolbar & Dialog Styles */
+/* MailGenie Premium Injected Gmail Toolbar & Dialog Styles v2.0 */
 
 /* Outer Injected Wrapper Container */
 .mailgenie-wrapper {
@@ -48,23 +48,23 @@
 }
 
 /* Primary AI Reply Button */
-.mailgenie-btn-primary {
+.mailgenie-btn-primary, .mailgenie-btn {
   background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
   color: #ffffff !important;
   box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3) !important;
 }
 
-.mailgenie-btn-primary:hover {
+.mailgenie-btn-primary:hover, .mailgenie-btn:hover {
   background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
   transform: translateY(-1px) !important;
   box-shadow: 0 4px 10px rgba(99, 102, 241, 0.45) !important;
 }
 
-.mailgenie-btn-primary:active {
+.mailgenie-btn-primary:active, .mailgenie-btn:active {
   transform: translateY(0) !important;
 }
 
-.mailgenie-btn-primary:disabled, .mailgenie-btn-primary.mailgenie-loading {
+.mailgenie-btn-primary:disabled, .mailgenie-btn-primary.mailgenie-loading, .mailgenie-btn:disabled {
   background: linear-gradient(135deg, #a5b4fc 0%, #c4b5fd 100%) !important;
   opacity: 0.85 !important;
   cursor: wait !important;
@@ -148,12 +148,39 @@
 }
 
 .mailgenie-select:disabled {
-  opacity: 0.5 !important;
+  opacity: 0.55 !important;
   cursor: not-allowed !important;
 }
 
 .mailgenie-template-select {
   max-width: 135px !important;
+}
+
+/* Connection Status Dot */
+.mailgenie-status-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 4px !important;
+  cursor: help !important;
+}
+
+.mailgenie-dot {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 50% !important;
+  display: inline-block !important;
+  transition: background-color 0.3s ease !important;
+}
+
+.mailgenie-dot.online {
+  background-color: #10b981 !important;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6) !important;
+}
+
+.mailgenie-dot.offline {
+  background-color: #f59e0b !important;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.6) !important;
 }
 
 /* Dark Mode Overrides */
