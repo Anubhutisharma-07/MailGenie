@@ -18,20 +18,24 @@ public class EmailGeneratorController {
     @PostMapping("/generate")
     public ResponseEntity<String> generateEmail(@RequestBody EmailRequest emailRequest){
         long startTime = System.currentTimeMillis();
-        String response = emailGeneratorService.generateEmailReply(emailRequest);
-        long duration = System.currentTimeMillis() - startTime;
+        String response = null;
+        String status = "ERROR";
+        int charCount = 0;
+        org.springframework.web.server.ResponseStatusException exceptionToThrow = null;
 
+        try {
+            response = emailGeneratorService.generateEmailReply(emailRequest);
+            status = "SUCCESS";
+            charCount = response != null ? response.length() : 0;
+        } catch (org.springframework.web.server.ResponseStatusException e) {
+            exceptionToThrow = e;
+        }
+
+        long duration = System.currentTimeMillis() - startTime;
         String resolvedProvider = emailRequest.getProvider() != null ? emailRequest.getProvider() : "groq";
         String resolvedLanguage = emailRequest.getLanguage() != null ? emailRequest.getLanguage() : "English";
         String resolvedModel = emailRequest.getModel() != null && !emailRequest.getModel().trim().isEmpty() 
                 ? emailRequest.getModel() : "default";
-
-        // Determine status
-        boolean isSuccess = response != null && !response.startsWith("Error:") && 
-                            !response.contains("API error") && 
-                            !response.startsWith("Unexpected error");
-        String status = isSuccess ? "SUCCESS" : "ERROR";
-        int charCount = (isSuccess && response != null) ? response.length() : 0;
 
         // Save metric record
         try {
@@ -46,9 +50,13 @@ public class EmailGeneratorController {
         } catch (Exception e) {
             System.err.println("Failed to log API request metrics: " + e.getMessage());
         }
+
+        if (exceptionToThrow != null) {
+            throw exceptionToThrow;
+        }
         
         // Auto-save generated email to history if successful
-        if (isSuccess) {
+        if (exceptionToThrow == null && response != null) {
             EmailHistory history = EmailHistory.builder()
                     .originalContent(emailRequest.getEmailContent())
                     .tone(emailRequest.getTone())
