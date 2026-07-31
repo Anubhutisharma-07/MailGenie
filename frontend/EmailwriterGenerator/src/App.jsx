@@ -178,6 +178,17 @@ function App() {
 
       const historyResponse = await axios.get(`${backendUrl}/api/history`);
       setHistoryList(historyResponse.data);
+
+      // Fetch templates from backend
+      try {
+        const templateResponse = await axios.get(`${backendUrl}/api/templates`);
+        if (templateResponse.data && templateResponse.data.length > 0) {
+          setCustomTemplates(templateResponse.data);
+          localStorage.setItem('mailgenie_custom_templates', JSON.stringify(templateResponse.data));
+        }
+      } catch (tErr) {
+        console.warn("Could not fetch templates from backend:", tErr);
+      }
     } catch (err) {
       console.error("Backend health check failed:", err);
       setBackendOnline(false);
@@ -353,27 +364,38 @@ function App() {
   };
 
   // Templates CRUD
-  const handleAddTemplate = () => {
+  const handleAddTemplate = async () => {
     if (!newTemplateTitle.trim() || !newTemplateBody.trim()) return;
     const newTpl = {
-      id: Date.now().toString(),
       title: newTemplateTitle,
       body: newTemplateBody
     };
-    const updated = [...customTemplates, newTpl];
-    setCustomTemplates(updated);
-    localStorage.setItem('mailgenie_custom_templates', JSON.stringify(updated));
-    setNewTemplateTitle('');
-    setNewTemplateBody('');
-    showNotification('New template saved successfully!', 'success');
-  };
-
-  const handleDeleteTemplate = (id) => {
-    if (window.confirm("Delete this template?")) {
-      const updated = customTemplates.filter(t => t.id !== id);
+    try {
+      const response = await axios.post(`${backendUrl}/api/templates`, newTpl);
+      const updated = [...customTemplates, response.data];
       setCustomTemplates(updated);
       localStorage.setItem('mailgenie_custom_templates', JSON.stringify(updated));
-      showNotification('Template deleted.', 'info');
+      setNewTemplateTitle('');
+      setNewTemplateBody('');
+      showNotification('New template saved successfully!', 'success');
+    } catch (err) {
+      console.error("Failed to save template:", err);
+      showNotification('Failed to save template to backend.', 'error');
+    }
+  };
+
+  const handleDeleteTemplate = async (id) => {
+    if (window.confirm("Delete this template?")) {
+      try {
+        await axios.delete(`${backendUrl}/api/templates/${id}`);
+        const updated = customTemplates.filter(t => t.id !== id);
+        setCustomTemplates(updated);
+        localStorage.setItem('mailgenie_custom_templates', JSON.stringify(updated));
+        showNotification('Template deleted.', 'info');
+      } catch (err) {
+        console.error("Failed to delete template:", err);
+        showNotification('Failed to delete template from backend.', 'error');
+      }
     }
   };
 
