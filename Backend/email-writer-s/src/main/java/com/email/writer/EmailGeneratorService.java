@@ -155,9 +155,13 @@ public class EmailGeneratorService {
                     .block(java.time.Duration.ofSeconds(15));
             return extractResponseContent(response, provider);
         } catch (WebClientResponseException e) {
-            return provider.toUpperCase() + " API error [" + e.getStatusCode() + "]: " + e.getResponseBodyAsString();
+            throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.BAD_GATEWAY,
+                provider.toUpperCase() + " API error [" + e.getStatusCode() + "]: " + e.getResponseBodyAsString(), e);
         } catch (Exception e) {
-            return "Unexpected error calling " + provider.toUpperCase() + " API: " + e.getMessage();
+            throw new org.springframework.web.server.ResponseStatusException(
+                org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR,
+                "Unexpected error calling " + provider.toUpperCase() + " API: " + e.getMessage(), e);
         }
     }
 
