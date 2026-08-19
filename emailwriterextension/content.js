@@ -90,6 +90,33 @@ console.log("MailGenie Extension - Content Script Loaded v2.1");
       .replace(/"/g, '&quot;');
   }
 
+  // Modern text insertion alternative to document.execCommand
+  function insertTextAtCursor(text, composeBox) {
+    composeBox.focus();
+    const selection = window.getSelection();
+    if (selection.getRangeAt && selection.rangeCount) {
+      let range = selection.getRangeAt(0);
+      if (!composeBox.contains(range.commonAncestorContainer)) {
+        range = document.createRange();
+        range.selectNodeContents(composeBox);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+      range.deleteContents();
+      const textNode = document.createTextNode(text);
+      range.insertNode(textNode);
+      range.setStartAfter(textNode);
+      range.collapse(true);
+      selection.removeAllRanges();
+      selection.addRange(range);
+      composeBox.dispatchEvent(new Event('input', { bubbles: true }));
+    } else {
+      composeBox.innerText += text;
+      composeBox.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }
+
   // Get user settings safely
   async function getSettings() {
     const defaults = {
@@ -569,8 +596,7 @@ console.log("MailGenie Extension - Content Script Loaded v2.1");
             undoButton.disabled = false;
             undoButton.classList.add('mailgenie-btn-active');
 
-            composeBox.focus();
-            document.execCommand('insertText', false, responseData);
+            insertTextAtCursor(responseData, composeBox);
             showToast('AI Draft inserted successfully!', 'success');
           }
         } catch (err) {
@@ -634,8 +660,7 @@ console.log("MailGenie Extension - Content Script Loaded v2.1");
           else if (val === 'request_info') textToInsert = 'Thank you for the update. Could you please share more details regarding the next steps?';
           else if (val === 'follow_up') textToInsert = 'Hi, just following up on my previous email. Looking forward to hearing from you.';
 
-          composeBox.focus();
-          document.execCommand('insertText', false, textToInsert);
+          insertTextAtCursor(textToInsert, composeBox);
           showToast('Template preset inserted!', 'success');
         } else {
           showToast('Could not locate email compose editor', 'error');
