@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Integration tests to verify the CRUD endpoints of EmailHistoryController.
  */
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 class EmailHistoryControllerTest {
 
     @Autowired

@@ -14,10 +14,10 @@ public class EmailGeneratorService {
 
     private final WebClient webClient;
 
-    @Value("${groq.api.url}")
+    @Value("${groq.api.url:https://api.groq.com/openai/v1/chat/completions}")
     private String groqApiUrl;
 
-    @Value("${groq.api.key}")
+    @Value("${groq.api.key:your_groq_api_key_here}")
     private String groqApiKey;
 
     @Value("${openai.api.url:https://api.openai.com/v1/chat/completions}")
