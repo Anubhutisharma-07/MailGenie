@@ -3,7 +3,7 @@
 # 💌 MailGenie
 ### Premium AI-Powered Email Writer, Templates Manager & Gmail Reply Assistant
 
-Generate professional, context-aware, and personalized email replies in seconds — directly integrated inside Gmail, or standalone via a beautiful glassmorphic web dashboard.
+Generate professional, context-aware, and personalized email replies in seconds — directly integrated inside Gmail, or standalone via a beautiful glassmorphic web dashboard
 
 ---
 
