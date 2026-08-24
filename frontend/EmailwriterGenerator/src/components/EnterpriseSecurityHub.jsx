@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { 
-    Box, Typography, CircularProgress, Card, CardContent, Grid, Paper, 
+import useStore from '../store/useStore';
+import {
+    Box, Typography, CircularProgress, Card, CardContent, Grid, Paper,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
     Button, Chip, TextField, Dialog, DialogTitle, DialogContent, DialogActions,
-    IconButton, Switch, FormControlLabel, Select, MenuItem, InputLabel, FormControl
+    Switch, FormControlLabel, Select, MenuItem, InputLabel, FormControl
 } from '@mui/material';
 
 const EnterpriseSecurityHub = () => {
+    const backendUrl = useStore((state) => state.backendUrl);
     const [policies, setPolicies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [dlpResult, setDlpResult] = useState(null);
