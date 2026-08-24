@@ -1,0 +1,66 @@
+type Query {
+    # Retrieve paginated email history for the authenticated user
+    getEmailHistory(page: Int, size: Int): [EmailHistoryItem]
+
+    # Retrieve specific email history item by ID
+    getEmailHistoryById(id: ID!): EmailHistoryItem
+
+    # Fetch custom email templates
+    getTemplates(category: String): [EmailTemplate]
+
+    # Search templates by keyword
+    searchTemplates(query: String!): [EmailTemplate]
+}
+
+type Mutation {
+    # Generate an AI email reply synchronously via GraphQL
+    generateEmail(input: GenerateEmailInput!): GenerateEmailPayload
+
+    # Save a new custom email template
+    createTemplate(input: CreateTemplateInput!): EmailTemplate
+
+    # Delete custom email template
+    deleteTemplate(id: ID!): Boolean
+
+    # Clear generation history
+    clearHistory: Boolean
+}
+
+type EmailHistoryItem {
+    id: ID!
+    originalContent: String!
+    generatedReply: String!
+    tone: String!
+    provider: String!
+    createdAt: String!
+}
+
+type EmailTemplate {
+    id: ID!
+    title: String!
+    content: String!
+    tone: String!
+    category: String
+    isDefault: Boolean!
+    createdAt: String
+}
+
+input GenerateEmailInput {
+    emailContent: String!
+    tone: String!
+    provider: String
+}
+
+input CreateTemplateInput {
+    title: String!
+    content: String!
+    tone: String!
+    category: String
+}
+
+type GenerateEmailPayload {
+    reply: String!
+    provider: String!
+    tokensUsed: Int
+    executionTimeMs: Int
+}
