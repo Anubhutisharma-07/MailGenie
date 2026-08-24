@@ -51,12 +51,11 @@ public class QuotaManagementService {
     @Transactional
     public Map<String, Object> consumeAndValidateTokens(String userId, long requestedTokens) {
         // Fallback user ID for non-auth simulation
-        if (userId == null || userId.trim().isEmpty()) {
-            userId = "DEMO-" + UUID.randomUUID().toString().substring(0, 8);
-        }
+        final String resolvedUserId = (userId == null || userId.trim().isEmpty())
+                ? "DEMO-" + UUID.randomUUID().toString().substring(0, 8) : userId;
 
-        UserQuotaMetric metric = metricRepository.findByUserId(userId).orElseGet(() -> UserQuotaMetric.builder()
-                .userId(userId)
+        UserQuotaMetric metric = metricRepository.findByUserId(resolvedUserId).orElseGet(() -> UserQuotaMetric.builder()
+                .userId(resolvedUserId)
                 .assignedTier("FREE")
                 .generationsToday(0L)
                 .tokensUsedThisMonth(0L)
