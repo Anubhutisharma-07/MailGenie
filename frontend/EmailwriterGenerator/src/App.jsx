@@ -9,6 +9,8 @@ import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
 import SecurityPage from './pages/SecurityPage';
 import QuotaManagementDashboard from './components/QuotaManagementDashboard';
+import EnterpriseTelemetryDashboard from './components/EnterpriseTelemetryDashboard';
+import ContextAwareTemplateList from './components/ContextAwareTemplateList';
 
 import {
   Box,
@@ -457,7 +459,9 @@ function App() {
     { id: 'history', label: '📜 History Logs', icon: '⏳' },
     { id: 'templates', label: '📂 Saved Templates', icon: '📁' },
     { id: 'quotas', label: '🎛️ Quota Policies', icon: '🎛️' },
+    { id: 'context_templates', label: '🧠 Context Templates', icon: '🧠' },
     { id: 'analytics', label: '📊 Usage Analytics', icon: '📈' },
+    { id: 'telemetry', label: '🚀 Enterprise Telemetry', icon: '🚀' },
     { id: 'settings', label: '⚙️ Settings', icon: '⚙️' }
   ];
 
@@ -1383,6 +1387,14 @@ Custom Directives: ${studioCustomInstruction || 'None'}
 
             {activeTab === 'quotas' && (
               <QuotaManagementDashboard />
+            )}
+
+            {activeTab === 'telemetry' && (
+              <EnterpriseTelemetryDashboard />
+            )}
+
+            {activeTab === 'context_templates' && (
+              <ContextAwareTemplateList />
             )}
 
             {activeTab === 'about' && (
