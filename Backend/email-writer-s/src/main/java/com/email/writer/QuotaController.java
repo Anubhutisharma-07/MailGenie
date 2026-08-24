@@ -34,7 +34,11 @@ public class QuotaController {
     public ResponseEntity<Map<String, Object>> consume(@RequestBody Map<String, Object> payload) {
         String userId = (String) payload.getOrDefault("userId", "");
         long size = Long.valueOf(payload.getOrDefault("requestedTokens", 500).toString());
-        return ResponseEntity.ok(quotaService.consumeAndValidateTokens(userId, size));
+        Map<String, Object> result = quotaService.consumeAndValidateTokens(userId, size);
+        if (Boolean.FALSE.equals(result.get("allowed"))) {
+            return ResponseEntity.status(429).body(result);
+        }
+        return ResponseEntity.ok(result);
     }
 
     @PostMapping("/seed")

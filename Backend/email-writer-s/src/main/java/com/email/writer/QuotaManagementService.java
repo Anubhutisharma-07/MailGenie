@@ -16,7 +16,6 @@ public class QuotaManagementService {
 
     private final QuotaRuleRepository ruleRepository;
     private final UserQuotaMetricRepository metricRepository;
-    private final TelemetryService telemetryService;
 
     public List<QuotaRule> getRules() {
         return ruleRepository.findAll();
@@ -97,10 +96,6 @@ public class QuotaManagementService {
         } else {
             response.put("blockReason", reason);
             response.put("tokensRemaining", 0);
-
-            // Log telemetry for security alerts
-            telemetryService.logTelemetry("quota_engine", "/tokens/consume", 0L, "RATE_LIMITED", userId,
-                    (int) requestedTokens);
         }
 
         return response;
