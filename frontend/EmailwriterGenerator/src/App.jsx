@@ -8,7 +8,8 @@ import HelpPage from './pages/HelpPage';
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
 import SecurityPage from './pages/SecurityPage';
-import WebhookDashboard from './components/WebhookDashboard';
+import DatabaseMigrationDashboard from './components/DatabaseMigrationDashboard';
+import QuotaManagementDashboard from './components/QuotaManagementDashboard';
 import EnterpriseTelemetryDashboard from './components/EnterpriseTelemetryDashboard';
 import ContextAwareTemplateList from './components/ContextAwareTemplateList';
 
@@ -458,7 +459,8 @@ function App() {
     { id: 'studio', label: '🎨 Prompt Studio', icon: '✨' },
     { id: 'history', label: '📜 History Logs', icon: '⏳' },
     { id: 'templates', label: '📂 Saved Templates', icon: '📁' },
-    { id: 'webhooks', label: '🔗 Webhooks', icon: '🔗' },
+    { id: 'migrations', label: '🗄️ DB Migrations', icon: '🗄️' },
+    { id: 'quotas', label: '🎛️ Quota Policies', icon: '🎛️' },
     { id: 'context_templates', label: '🧠 Context Templates', icon: '🧠' },
     { id: 'analytics', label: '📊 Usage Analytics', icon: '📈' },
     { id: 'telemetry', label: '🚀 Enterprise Telemetry', icon: '🚀' },
@@ -1385,8 +1387,12 @@ Custom Directives: ${studioCustomInstruction || 'None'}
               </Box>
             )}
 
-            {activeTab === 'webhooks' && (
-              <WebhookDashboard />
+            {activeTab === 'migrations' && (
+              <DatabaseMigrationDashboard />
+            )}
+
+            {activeTab === 'quotas' && (
+              <QuotaManagementDashboard />
             )}
 
             {activeTab === 'telemetry' && (
