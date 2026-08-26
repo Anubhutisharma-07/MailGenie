@@ -178,7 +178,7 @@ public class EmailGeneratorService {
         );
     }
 
-    private String extractResponseContent(String response, String provider) {
+    String extractResponseContent(String response, String provider) {
         try {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode rootNode = mapper.readTree(response);
@@ -198,7 +198,7 @@ public class EmailGeneratorService {
         }
     }
 
-    private String buildPrompt(EmailRequest emailRequest) {
+    String buildPrompt(EmailRequest emailRequest) {
         StringBuilder prompt = new StringBuilder();
         if (emailRequest.isComposeMode()) {
             prompt.append("Write a complete email based on the following instructions. ");
