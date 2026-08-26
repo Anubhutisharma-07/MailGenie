@@ -11,5 +11,6 @@ public class EmailRequest {
     private String language; // e.g., "English", "Spanish", "French"
     private String apiKey;   // Optional API key passed from frontend
     private String customInstructions; // Optional user custom prompt or template instructions
+    private java.util.Map<String, String> templateVariables; // Dynamic variables for template interpolation
     private boolean composeMode; // true if writing a new email, false/default if generating a reply
 }

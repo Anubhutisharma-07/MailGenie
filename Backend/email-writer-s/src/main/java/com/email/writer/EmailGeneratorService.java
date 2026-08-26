@@ -216,16 +216,26 @@ public class EmailGeneratorService {
             prompt.append("Write the response strictly in ").append(emailRequest.getLanguage()).append(". ");
         }
 
-        if (emailRequest.getCustomInstructions() != null && !emailRequest.getCustomInstructions().trim().isEmpty()) {
+        String rawContent = emailRequest.getEmailContent() != null ? emailRequest.getEmailContent() : "";
+        String rawInstructions = emailRequest.getCustomInstructions() != null ? emailRequest.getCustomInstructions().trim() : "";
+
+        if (emailRequest.getTemplateVariables() != null && !emailRequest.getTemplateVariables().isEmpty()) {
+            rawContent = com.email.writer.util.TemplateVariableReplacer.replaceVariables(rawContent, emailRequest.getTemplateVariables());
+            if (!rawInstructions.isEmpty()) {
+                rawInstructions = com.email.writer.util.TemplateVariableReplacer.replaceVariables(rawInstructions, emailRequest.getTemplateVariables());
+            }
+        }
+
+        if (!rawInstructions.isEmpty()) {
             prompt.append("\nSpecific User Instructions / Context: ")
-                  .append(emailRequest.getCustomInstructions().trim())
+                  .append(rawInstructions)
                   .append("\n");
         }
         
         if (emailRequest.isComposeMode()) {
-            prompt.append("\nInstructions:\n").append(emailRequest.getEmailContent());
+            prompt.append("\nInstructions:\n").append(rawContent);
         } else {
-            prompt.append("\nOriginal email:\n").append(emailRequest.getEmailContent());
+            prompt.append("\nOriginal email:\n").append(rawContent);
         }
         return prompt.toString();
     }

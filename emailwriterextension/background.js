@@ -8,27 +8,27 @@ const DEFAULT_FALLBACK_TEMPLATES = [
   {
     id: "default_1",
     title: "👔 Professional Reply",
-    body: "Dear [Name],\n\nThank you for reaching out. I have reviewed your message and would be happy to assist. Let us schedule a brief call to discuss the next steps.\n\nBest regards,\n[Your Name]"
+    body: "Dear {{name}},\n\nThank you for reaching out. I have reviewed your message and would be happy to assist. Let us schedule a brief call to discuss the next steps.\n\nBest regards,\n{{sender}}"
   },
   {
     id: "default_2",
     title: "☕ Casual Response",
-    body: "Hi [Name],\n\nThanks for the update! Sounds good to me. Let me know if you need anything else from my end.\n\nCheers,\n[Your Name]"
+    body: "Hi {{name}},\n\nThanks for the update! Sounds good to me. Let me know if you need anything else from my end.\n\nCheers,\n{{sender}}"
   },
   {
     id: "default_3",
     title: "📅 Schedule Meeting",
-    body: "Hi [Name],\n\nThanks for contacting me. I am available for a quick meeting to discuss this further. Please let me know your availability for this week.\n\nBest regards,\n[Your Name]"
+    body: "Hi {{name}},\n\nThanks for contacting me. I am available for a quick meeting to discuss this further. Please let me know your availability for this week.\n\nBest regards,\n{{sender}}"
   },
   {
     id: "default_4",
     title: "🙏 Thank You Note",
-    body: "Dear [Name],\n\nThank you very much for your prompt response and helpful assistance. I really appreciate your time and support.\n\nWarm regards,\n[Your Name]"
+    body: "Dear {{name}},\n\nThank you very much for your prompt response and helpful assistance. I really appreciate your time and support.\n\nWarm regards,\n{{sender}}"
   },
   {
     id: "default_5",
     title: "✋ Polite Decline",
-    body: "Dear [Name],\n\nThank you for reaching out and considering me. Unfortunately, I am unable to proceed with this at the moment due to current commitments. I wish you all the best.\n\nBest regards,\n[Your Name]"
+    body: "Dear {{name}},\n\nThank you for reaching out and considering me. Unfortunately, I am unable to proceed with this at the moment due to current commitments. I wish you all the best.\n\nBest regards,\n{{sender}}"
   }
 ];
 
