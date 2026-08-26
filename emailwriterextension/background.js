@@ -114,11 +114,13 @@ async function handleGenerateEmail(message, sendResponse) {
 
     const payload = {
       emailContent: message.emailContent || '',
+      subject: message.subject || message.emailSubject || '',
       tone: message.tone || settings.defaultTone || 'professional',
       provider: message.provider || settings.provider || 'groq',
       model: message.model || settings.customModel || '',
       language: message.language || settings.defaultLanguage || 'English',
       apiKey: message.apiKey || settings.apiKey || '',
+      customInstructions: message.customInstructions || '',
       composeMode: !!message.composeMode
     };
 
@@ -144,7 +146,7 @@ async function handleGenerateEmail(message, sendResponse) {
     }
 
     const replyText = await response.text();
-    sendResponse({ success: true, reply: replyText, backendUrl });
+    sendResponse({ success: true, reply: replyText, data: replyText, backendUrl });
 
   } catch (error) {
     console.error("MailGenie Worker: Generation Error", error);

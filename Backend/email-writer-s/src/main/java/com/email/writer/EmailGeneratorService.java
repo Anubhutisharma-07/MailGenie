@@ -198,7 +198,7 @@ public class EmailGeneratorService {
         }
     }
 
-    private String buildPrompt(EmailRequest emailRequest) {
+    String buildPrompt(EmailRequest emailRequest) {
         StringBuilder prompt = new StringBuilder();
         if (emailRequest.isComposeMode()) {
             prompt.append("Write a complete email based on the following instructions. ");
@@ -214,6 +214,12 @@ public class EmailGeneratorService {
         
         if (emailRequest.getLanguage() != null && !emailRequest.getLanguage().trim().isEmpty()) {
             prompt.append("Write the response strictly in ").append(emailRequest.getLanguage()).append(". ");
+        }
+
+        if (emailRequest.getSubject() != null && !emailRequest.getSubject().trim().isEmpty()) {
+            prompt.append("\nEmail Subject / Topic: ")
+                  .append(emailRequest.getSubject().trim())
+                  .append("\n");
         }
 
         if (emailRequest.getCustomInstructions() != null && !emailRequest.getCustomInstructions().trim().isEmpty()) {
