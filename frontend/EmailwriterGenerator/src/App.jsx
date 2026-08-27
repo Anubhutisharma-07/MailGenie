@@ -10,6 +10,7 @@ import PrivacyPage from './pages/PrivacyPage';
 import SecurityPage from './pages/SecurityPage';
 import EnterpriseTelemetryDashboard from './components/EnterpriseTelemetryDashboard';
 import ContextAwareTemplateList from './components/ContextAwareTemplateList';
+import CampaignROIDashboard from './components/CampaignROIDashboard';
 
 import {
   Box,
@@ -458,6 +459,7 @@ function App() {
     { id: 'history', label: '📜 History Logs', icon: '⏳' },
     { id: 'templates', label: '📂 Saved Templates', icon: '📁' },
     { id: 'context_templates', label: '🧠 Context Templates', icon: '🧠' },
+    { id: 'campaign_roi', label: '💰 Campaign ROI', icon: '💰' },
     { id: 'analytics', label: '📊 Usage Analytics', icon: '📈' },
     { id: 'telemetry', label: '🚀 Enterprise Telemetry', icon: '🚀' },
     { id: 'settings', label: '⚙️ Settings', icon: '⚙️' }
@@ -1389,6 +1391,10 @@ Custom Directives: ${studioCustomInstruction || 'None'}
 
             {activeTab === 'context_templates' && (
               <ContextAwareTemplateList />
+            )}
+
+            {activeTab === 'campaign_roi' && (
+              <CampaignROIDashboard />
             )}
 
             {activeTab === 'about' && (
