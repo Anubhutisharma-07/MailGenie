@@ -42,7 +42,7 @@ public class EmailGeneratorService {
         this.webClient = webClientBuilder.build();
     }
 
-    public String generateEmailReply(EmailRequest emailRequest) {
+    public java.util.concurrent.CompletableFuture<String> generateEmailReplyAsync(EmailRequest emailRequest) {
         String provider = emailRequest.getProvider() != null ? emailRequest.getProvider().toLowerCase() : "groq";
         
         String apiUrl;
@@ -109,7 +109,7 @@ public class EmailGeneratorService {
                 defaultModel = "claude-3-5-sonnet-20241022";
                 provider = "claude";
             } else {
-                return generateLocalFallbackReply(emailRequest);
+                return java.util.concurrent.CompletableFuture.completedFuture(generateLocalFallbackReply(emailRequest));
             }
         }
 
@@ -137,31 +137,46 @@ public class EmailGeneratorService {
             );
         }
 
+        WebClient.RequestBodySpec requestSpec = webClient.post()
+                .uri(apiUrl)
+                .header("Content-Type", "application/json");
+
+        if ("claude".equals(provider)) {
+            requestSpec = requestSpec.header("x-api-key", apiKey)
+                    .header("anthropic-version", "2023-06-01");
+        } else {
+            requestSpec = requestSpec.header("Authorization", "Bearer " + apiKey);
+        }
+
+        final String finalProvider = provider;
+        return requestSpec.bodyValue(requestBody)
+                .retrieve()
+                .bodyToMono(String.class)
+                .timeout(java.time.Duration.ofSeconds(15))
+                .map(response -> extractResponseContent(response, finalProvider))
+                .onErrorMap(WebClientResponseException.class, e -> 
+                    new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.BAD_GATEWAY,
+                        finalProvider.toUpperCase() + " API error [" + e.getStatusCode() + "]: " + e.getResponseBodyAsString(), e))
+                .onErrorMap(e -> !(e instanceof org.springframework.web.server.ResponseStatusException), e ->
+                    new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Unexpected error calling " + finalProvider.toUpperCase() + " API: " + e.getMessage(), e))
+                .toFuture();
+    }
+
+    public String generateEmailReply(EmailRequest emailRequest) {
         try {
-            WebClient.RequestBodySpec requestSpec = webClient.post()
-                    .uri(apiUrl)
-                    .header("Content-Type", "application/json");
-
-            if ("claude".equals(provider)) {
-                requestSpec = requestSpec.header("x-api-key", apiKey)
-                        .header("anthropic-version", "2023-06-01");
-            } else {
-                requestSpec = requestSpec.header("Authorization", "Bearer " + apiKey);
+            return generateEmailReplyAsync(emailRequest).join();
+        } catch (java.util.concurrent.CompletionException ce) {
+            Throwable cause = ce.getCause();
+            if (cause instanceof org.springframework.web.server.ResponseStatusException rse) {
+                throw rse;
             }
-
-            String response = requestSpec.bodyValue(requestBody)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block(java.time.Duration.ofSeconds(15));
-            return extractResponseContent(response, provider);
-        } catch (WebClientResponseException e) {
-            throw new org.springframework.web.server.ResponseStatusException(
-                org.springframework.http.HttpStatus.BAD_GATEWAY,
-                provider.toUpperCase() + " API error [" + e.getStatusCode() + "]: " + e.getResponseBodyAsString(), e);
-        } catch (Exception e) {
-            throw new org.springframework.web.server.ResponseStatusException(
-                org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR,
-                "Unexpected error calling " + provider.toUpperCase() + " API: " + e.getMessage(), e);
+            if (cause instanceof RuntimeException re) {
+                throw re;
+            }
+            throw new RuntimeException(cause);
         }
     }
 
