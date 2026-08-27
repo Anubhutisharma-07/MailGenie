@@ -9,6 +9,7 @@ import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
 import SecurityPage from './pages/SecurityPage';
 import EnterpriseTelemetryDashboard from './components/EnterpriseTelemetryDashboard';
+import ABTestingAnalytics from './components/ABTestingAnalytics';
 import ContextAwareTemplateList from './components/ContextAwareTemplateList';
 
 import {
@@ -458,6 +459,7 @@ function App() {
     { id: 'history', label: '📜 History Logs', icon: '⏳' },
     { id: 'templates', label: '📂 Saved Templates', icon: '📁' },
     { id: 'context_templates', label: '🧠 Context Templates', icon: '🧠' },
+    { id: 'ab_testing', label: '🧪 A/B Testing', icon: '🧪' },
     { id: 'analytics', label: '📊 Usage Analytics', icon: '📈' },
     { id: 'telemetry', label: '🚀 Enterprise Telemetry', icon: '🚀' },
     { id: 'settings', label: '⚙️ Settings', icon: '⚙️' }
@@ -1389,6 +1391,10 @@ Custom Directives: ${studioCustomInstruction || 'None'}
 
             {activeTab === 'context_templates' && (
               <ContextAwareTemplateList />
+            )}
+
+            {activeTab === 'ab_testing' && (
+              <ABTestingAnalytics />
             )}
 
             {activeTab === 'about' && (
