@@ -5,7 +5,7 @@
 
 Generate professional, context-aware, and personalized email replies in seconds — directly integrated inside Gmail, or standalone via a beautiful glassmorphic web dashboard
 
----
+----
 
 [![Java](https://img.shields.io/badge/Java-17+-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
