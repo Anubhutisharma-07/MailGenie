@@ -11,6 +11,7 @@ import SecurityPage from './pages/SecurityPage';
 import DatabaseMigrationDashboard from './components/DatabaseMigrationDashboard';
 import QuotaManagementDashboard from './components/QuotaManagementDashboard';
 import EnterpriseTelemetryDashboard from './components/EnterpriseTelemetryDashboard';
+import ABTestingAnalytics from './components/ABTestingAnalytics';
 import ContextAwareTemplateList from './components/ContextAwareTemplateList';
 import EmailQualityAnalyzerDashboard from './components/EmailQualityAnalyzerDashboard';
 
@@ -450,6 +451,7 @@ function App() {
     { id: 'migrations', label: '🗄️ DB Migrations', icon: '🗄️' },
     { id: 'quotas', label: '🎛️ Quota Policies', icon: '🎛️' },
     { id: 'context_templates', label: '🧠 Context Templates', icon: '🧠' },
+    { id: 'ab_testing', label: '🧪 A/B Testing', icon: '🧪' },
     { id: 'analytics', label: '📊 Usage Analytics', icon: '📈' },
     { id: 'telemetry', label: '🚀 Enterprise Telemetry', icon: '🚀' },
     { id: 'quality', label: '📊 Quality Analyzer', icon: '📊' },
@@ -1395,6 +1397,10 @@ Custom Directives: ${studioCustomInstruction || 'None'}
 
             {activeTab === 'context_templates' && (
               <ContextAwareTemplateList />
+            )}
+
+            {activeTab === 'ab_testing' && (
+              <ABTestingAnalytics />
             )}
 
             {activeTab === 'about' && (
