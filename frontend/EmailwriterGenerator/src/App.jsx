@@ -12,6 +12,7 @@ import DatabaseMigrationDashboard from './components/DatabaseMigrationDashboard'
 import QuotaManagementDashboard from './components/QuotaManagementDashboard';
 import EnterpriseTelemetryDashboard from './components/EnterpriseTelemetryDashboard';
 import ContextAwareTemplateList from './components/ContextAwareTemplateList';
+import EmailQualityAnalyzerDashboard from './components/EmailQualityAnalyzerDashboard';
 
 import {
   Box,
@@ -451,6 +452,7 @@ function App() {
     { id: 'context_templates', label: '🧠 Context Templates', icon: '🧠' },
     { id: 'analytics', label: '📊 Usage Analytics', icon: '📈' },
     { id: 'telemetry', label: '🚀 Enterprise Telemetry', icon: '🚀' },
+    { id: 'quality', label: '📊 Quality Analyzer', icon: '📊' },
     { id: 'settings', label: '⚙️ Settings', icon: '⚙️' }
   ];
 
@@ -1288,6 +1290,11 @@ Custom Directives: ${studioCustomInstruction || 'None'}
                   </Grid>
                 </Grid>
               </Box>
+            )}
+
+            {/* TAB: QUALITY ANALYZER */}
+            {activeTab === 'quality' && (
+              <EmailQualityAnalyzerDashboard backendUrl={backendUrl} />
             )}
 
             {/* TAB: SETTINGS */}
