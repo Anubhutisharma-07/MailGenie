@@ -452,6 +452,20 @@ console.log("MailGenie Extension - Content Script Loaded v2.1");
     return cleaned.trim();
   }
 
+  // Client-side Template Variable Replacer
+  function replaceTemplateVariables(template, variables = {}) {
+    if (!template) return '';
+    let result = template;
+    for (const [key, value] of Object.entries(variables)) {
+      if (!key) continue;
+      const mustacheRegex = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, 'gi');
+      const bracketRegex = new RegExp(`\\[\\s*${key}\\s*\\]`, 'gi');
+      const val = value != null ? value : '';
+      result = result.replace(mustacheRegex, val).replace(bracketRegex, val);
+    }
+    return result;
+  }
+
   // Locate compose window roots
   function findComposeContainers() {
     const containers = new Set();
