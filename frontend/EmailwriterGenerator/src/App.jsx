@@ -14,6 +14,7 @@ import EnterpriseTelemetryDashboard from './components/EnterpriseTelemetryDashbo
 import ABTestingAnalytics from './components/ABTestingAnalytics';
 import ContextAwareTemplateList from './components/ContextAwareTemplateList';
 import CampaignROIDashboard from './components/CampaignROIDashboard';
+import WorkflowAutomationBuilder from './components/WorkflowAutomationBuilder';
 import EmailQualityAnalyzerDashboard from './components/EmailQualityAnalyzerDashboard';
 
 import {
@@ -453,6 +454,7 @@ function App() {
     { id: 'quotas', label: '🎛️ Quota Policies', icon: '🎛️' },
     { id: 'context_templates', label: '🧠 Context Templates', icon: '🧠' },
     { id: 'campaign_roi', label: '💰 Campaign ROI', icon: '💰' },
+    { id: 'workflow_automation', label: '⚡ Workflows', icon: '⚡' },
     { id: 'ab_testing', label: '🧪 A/B Testing', icon: '🧪' },
     { id: 'analytics', label: '📊 Usage Analytics', icon: '📈' },
     { id: 'telemetry', label: '🚀 Enterprise Telemetry', icon: '🚀' },
@@ -1403,6 +1405,12 @@ Custom Directives: ${studioCustomInstruction || 'None'}
 
             {activeTab === 'campaign_roi' && (
               <CampaignROIDashboard />
+            )}
+
+            {activeTab === 'workflow_automation' && (
+              <WorkflowAutomationBuilder />
+            )}
+
             {activeTab === 'ab_testing' && (
               <ABTestingAnalytics />
             )}

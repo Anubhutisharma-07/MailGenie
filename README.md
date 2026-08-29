@@ -250,7 +250,7 @@ Follow these steps to configure your local development environment.
     spring.datasource.username=sa
     spring.datasource.password=
     spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
-    spring.h2.console.enabled=true
+    spring.h2.console.enabled=false
     spring.h2.console.path=/h2-console
     spring.jpa.hibernate.ddl-auto=update
     ```
