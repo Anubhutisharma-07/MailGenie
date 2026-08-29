@@ -28,7 +28,7 @@ public class SecurityConfig {
                 .requestMatchers("/h2-console/**").permitAll() // If h2 console is enabled in dev
                 .requestMatchers("/graphql").permitAll()
                 .requestMatchers("/graphiql").permitAll()
-                .anyRequest().permitAll() // Temporary for testing other endpoints, restrict later as needed
+                .anyRequest().authenticated()
             )
             .headers(headers -> headers.frameOptions(frame -> frame.disable())) // For H2 console
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
