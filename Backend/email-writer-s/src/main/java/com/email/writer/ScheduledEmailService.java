@@ -1,5 +1,6 @@
 package com.email.writer;
 
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -72,7 +73,7 @@ public class ScheduledEmailService {
      * Returns all scheduled emails, ordered by scheduled time descending.
      */
     public List<ScheduledEmail> getAllScheduledEmails() {
-        return repository.findAll(SortBy.scheduledAtDesc());
+        return repository.findAll(Sort.by(Sort.Direction.DESC, "scheduledAt"));
     }
 
     /**

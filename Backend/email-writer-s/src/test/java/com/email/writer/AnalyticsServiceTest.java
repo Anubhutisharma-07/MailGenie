@@ -373,7 +373,7 @@ public class AnalyticsServiceTest {
     void testGetEventsInDateRange() {
         LocalDateTime start = LocalDateTime.now().minusDays(7);
         LocalDateTime end = LocalDateTime.now();
-        when(emailEventRepository.findByTimestampBetween(start, end)).thenReturn(List.of(sampleEvent));
+        when(emailEventRepository.findByEventTimestampBetween(start, end)).thenReturn(List.of(sampleEvent));
         List<EmailEvent> result = analyticsService.getEventsInDateRange(start, end);
         assertFalse(result.isEmpty());
     }
@@ -382,6 +382,7 @@ public class AnalyticsServiceTest {
     void testEngagementScoreVipComputation() {
         EngagementScore score = new EngagementScore();
         score.setEngagementScore(85.0);
+        score.setTotalSent(10);
         score.computeTier();
         assertTrue(score.isVip());
         assertFalse(score.isAtRisk());

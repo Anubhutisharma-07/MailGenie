@@ -28,7 +28,7 @@ public class CampaignAggregationJob {
     }
 
     private void declareWinner(EmailCampaign campaign) {
-        List<CampaignVariant> variants = variantRepository.findByCampaignId(campaign.getId());
+        List<CampaignVariant> variants = variantRepository.findByCampaignIdOrderByLabelAsc(campaign.getId());
         
         CampaignVariant winner = null;
         double maxRate = -1;
