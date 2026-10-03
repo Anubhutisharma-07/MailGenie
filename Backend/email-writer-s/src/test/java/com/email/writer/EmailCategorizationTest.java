@@ -197,7 +197,7 @@ class EmailCategorizationServiceTest {
         String content = "Please find attached the quarterly report.pdf for your review.";
         EmailCategorizationResult result = service.categorize(content);
 
-        assertTrue(result.getMentionsAttachments());
+        assertTrue(result.isMentionsAttachments());
         assertTrue(result.getTags().contains("review"));
     }
 
@@ -208,7 +208,7 @@ class EmailCategorizationServiceTest {
         String content = "Please submit the report by Monday. It is due by end of day.";
         EmailCategorizationResult result = service.categorize(content);
 
-        assertTrue(result.getMentionsDeadline());
+        assertTrue(result.isMentionsDeadline());
     }
 
     @Test

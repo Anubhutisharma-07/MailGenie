@@ -20,6 +20,8 @@ public interface WebhookDeliveryLogRepository extends JpaRepository<WebhookDeliv
      */
     List<WebhookDeliveryLog> findByWebhookConfigIdOrderByCreatedAtDesc(Long webhookConfigId);
 
+    List<WebhookDeliveryLog> findAllByOrderByCreatedAtDesc();
+
     /**
      * Find all logs with a specific delivery status.
      */

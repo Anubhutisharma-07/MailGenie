@@ -95,13 +95,12 @@ public class EmailGeneratorController {
                             for (int i = 0; i < emailRequest.getVariantsCount(); i++) {
                                 CampaignVariant variant = CampaignVariant.builder()
                                         .campaignId(campaign.getId())
-                                        .variantName("Variant " + (i + 1))
-                                        .subjectLine(emailRequest.getSubject() != null ? emailRequest.getSubject() : "Test Subject")
-                                        .content(response) // Simply reusing response for POC
-                                        .sentCount(0)
-                                        .openCount(0)
-                                        .clickCount(0)
-                                        .status("ACTIVE")
+                                        .label("Variant " + (i + 1))
+                                        .subject(emailRequest.getSubject() != null ? emailRequest.getSubject() : "Test Subject")
+                                        .body(response) // Simply reusing response for POC
+                                        .sentCount(0L)
+                                        .openCount(0L)
+                                        .clickCount(0L)
                                         .build();
                                 campaignVariantRepository.save(variant);
                             }

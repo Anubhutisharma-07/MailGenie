@@ -3,6 +3,7 @@ package com.email.writer;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
@@ -51,7 +52,7 @@ public class WebhookDeliveryService {
                 .build();
         log = deliveryLogRepository.save(log);
 
-        attemptDelivery(webhook, log, payloadJson, signature);
+        attemptDelivery(webhook, log, payloadJson, signature, eventType);
         return log;
     }
 
@@ -59,7 +60,7 @@ public class WebhookDeliveryService {
      * Core delivery logic with retry loop.
      */
     private void attemptDelivery(WebhookConfig webhook, WebhookDeliveryLog log,
-                                 String payloadJson, String signature) {
+                                 String payloadJson, String signature, String eventType) {
         int maxAttempts = Math.max(1, webhook.getMaxRetries());
         int timeoutSeconds = Math.max(1, Math.min(webhook.getTimeoutSeconds(), 30));
 
@@ -73,7 +74,7 @@ public class WebhookDeliveryService {
 
             long startTime = System.currentTimeMillis();
             try {
-                Integer httpStatus = webClient.post()
+                ResponseEntity<Void> response = webClient.post()
                         .uri(webhook.getUrl())
                         .header("Content-Type", "application/json")
                         .header("User-Agent", "MailGenie-Webhook/1.0")
@@ -86,7 +87,7 @@ public class WebhookDeliveryService {
                         .block(java.time.Duration.ofSeconds(timeoutSeconds));
 
                 long duration = System.currentTimeMillis() - startTime;
-                int status = httpStatus != null ? httpStatus.getStatusCode().value() : 0;
+                int status = response != null ? response.getStatusCode().value() : 0;
 
                 if (status >= 200 && status < 300) {
                     log.markDelivered(status, "OK", duration);
