@@ -173,11 +173,11 @@ export default function CampaignROIDashboard() {
       <Paper sx={{ p: 4, background: 'rgba(255,255,255,0.04)', borderRadius: 3, border: '1px solid rgba(255,255,255,0.06)', mb: 4 }}>
         <Typography variant="h6" sx={{ fontWeight: 700, mb: 3 }}>📊 Campaign Funnel (All Campaigns)</Typography>
         <Divider sx={{ mb: 3, opacity: 0.2 }} />
-        <FunnelBar label="Sent" value={totalSent} max={totalSent} color="#6366f1" rate="100%" />
-        <FunnelBar label="Delivered" value={completedCampaigns.reduce((s, c) => s + c.metrics.delivered, 0)} max={totalSent} color="#818cf8" rate={`${((completedCampaigns.reduce((s, c) => s + c.metrics.delivered, 0) / totalSent) * 100).toFixed(1)}%`} />
-        <FunnelBar label="Opened" value={completedCampaigns.reduce((s, c) => s + c.metrics.opened, 0)} max={totalSent} color="#10b981" rate={`${avgOpenRate}%`} />
-        <FunnelBar label="Clicked" value={completedCampaigns.reduce((s, c) => s + c.metrics.clicked, 0)} max={totalSent} color="#f59e0b" rate={`${((completedCampaigns.reduce((s, c) => s + c.metrics.clicked, 0) / totalSent) * 100).toFixed(1)}%`} />
-        <FunnelBar label="Converted" value={totalConversions} max={totalSent} color="#ec4899" rate={`${avgConversionRate}%`} />
+        <FunnelBar label="Sent" value={totalSent} max={Math.max(totalSent, 1)} color="#6366f1" rate={totalSent > 0 ? '100%' : '0%'} />
+        <FunnelBar label="Delivered" value={completedCampaigns.reduce((s, c) => s + c.metrics.delivered, 0)} max={Math.max(totalSent, 1)} color="#818cf8" rate={`${totalSent > 0 ? ((completedCampaigns.reduce((s, c) => s + c.metrics.delivered, 0) / totalSent) * 100).toFixed(1) : '0.0'}%`} />
+        <FunnelBar label="Opened" value={completedCampaigns.reduce((s, c) => s + c.metrics.opened, 0)} max={Math.max(totalSent, 1)} color="#10b981" rate={`${avgOpenRate}%`} />
+        <FunnelBar label="Clicked" value={completedCampaigns.reduce((s, c) => s + c.metrics.clicked, 0)} max={Math.max(totalSent, 1)} color="#f59e0b" rate={`${totalSent > 0 ? ((completedCampaigns.reduce((s, c) => s + c.metrics.clicked, 0) / totalSent) * 100).toFixed(1) : '0.0'}%`} />
+        <FunnelBar label="Converted" value={totalConversions} max={Math.max(totalSent, 1)} color="#ec4899" rate={`${avgConversionRate}%`} />
       </Paper>
 
       {/* Monthly Revenue Trend */}
