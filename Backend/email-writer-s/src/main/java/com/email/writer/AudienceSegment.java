@@ -5,9 +5,9 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "audience_segments", indexes = {
-    @Index("idx_segment_user"),
-    @Index("idx_segment_name"),
-    @Index("idx_segment_type")
+    @Index(name = "idx_segment_user", columnList = "userId"),
+    @Index(name = "idx_segment_name", columnList = "name"),
+    @Index(name = "idx_segment_type", columnList = "segmentType")
 })
 public class AudienceSegment {
 
@@ -36,7 +36,7 @@ public class AudienceSegment {
 
     private String dominantTier;
 
-    private boolean isActive;
+    private Boolean isActive;
 
     private String triggerEvent; // for behavioral: OPEN, CLICK, BOUNCE, etc.
 
@@ -100,8 +100,8 @@ public class AudienceSegment {
     public void setAvgEngagementScore(double avgEngagementScore) { this.avgEngagementScore = avgEngagementScore; }
     public String getDominantTier() { return dominantTier; }
     public void setDominantTier(String dominantTier) { this.dominantTier = dominantTier; }
-    public boolean getIsActive() { return isActive; }
-    public void setIsActive(boolean isActive) { this.isActive = isActive; }
+    public Boolean getIsActive() { return isActive; }
+    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
     public String getTriggerEvent() { return triggerEvent; }
     public void setTriggerEvent(String triggerEvent) { this.triggerEvent = triggerEvent; }
     public Integer getTriggerWindowDays() { return triggerWindowDays; }

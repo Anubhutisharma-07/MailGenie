@@ -93,21 +93,22 @@ class DeliverabilityServiceTest {
             r.setId(1L);
             return r;
         });
-        when(reputationRepository.findByDomain("gmail.com")).thenReturn(Optional.of(goodReputation));
+        when(reputationRepository.findByDomain("gooddomain.com")).thenReturn(Optional.of(goodReputation));
         when(reputationRepository.save(any(SenderReputation.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(recordRepository.countBySenderDomain("gmail.com")).thenReturn(10000L);
-        when(recordRepository.countBySenderDomainAndEventType("gmail.com", "DELIVERED")).thenReturn(9900L);
-        when(recordRepository.countBySenderDomainAndEventType("gmail.com", "BOUNCED")).thenReturn(25L);
-        when(recordRepository.countBySenderDomainAndEventType("gmail.com", "SPAM_COMPLAINT")).thenReturn(2L);
-        when(recordRepository.countBySenderDomainAndEventType("gmail.com", "UNSUBSCRIBED")).thenReturn(15L);
-        when(recordRepository.countBySenderDomainAndEventType("gmail.com", "OPENED")).thenReturn(4500L);
-        when(recordRepository.countBySenderDomainAndEventType("gmail.com", "CLICKED")).thenReturn(800L);
-        when(recordRepository.spfPassCount("gmail.com")).thenReturn(9950L);
-        when(recordRepository.dkimPassCount("gmail.com")).thenReturn(9980L);
-        when(recordRepository.dmarcPassCount("gmail.com")).thenReturn(9990L);
-        when(recordRepository.averageSpamScoreByDomain("gmail.com")).thenReturn(1.2);
-        when(recordRepository.countByRecipientDomain("gmail.com")).thenReturn(List.of(new Object[]{"outlook.com", 500L}));
-        when(blocklistRepository.countByDomainAndIsListedTrue("gmail.com")).thenReturn(0L);
+        when(recordRepository.countBySenderDomain("gooddomain.com")).thenReturn(10000L);
+        when(recordRepository.countBySenderDomainAndEventType("gooddomain.com", "DELIVERED")).thenReturn(9900L);
+        when(recordRepository.countBySenderDomainAndEventType("gooddomain.com", "BOUNCED")).thenReturn(25L);
+        when(recordRepository.countBySenderDomainAndEventType("gooddomain.com", "SPAM_COMPLAINT")).thenReturn(2L);
+        when(recordRepository.countBySenderDomainAndEventType("gooddomain.com", "UNSUBSCRIBED")).thenReturn(15L);
+        when(recordRepository.countBySenderDomainAndEventType("gooddomain.com", "OPENED")).thenReturn(4500L);
+        when(recordRepository.countBySenderDomainAndEventType("gooddomain.com", "CLICKED")).thenReturn(800L);
+        when(recordRepository.spfPassCount("gooddomain.com")).thenReturn(9950L);
+        when(recordRepository.dkimPassCount("gooddomain.com")).thenReturn(9980L);
+        when(recordRepository.dmarcPassCount("gooddomain.com")).thenReturn(9990L);
+        when(recordRepository.averageSpamScoreByDomain("gooddomain.com")).thenReturn(1.2);
+        when(recordRepository.countByRecipientDomain("gooddomain.com")).thenReturn(List.<Object[]>of(new Object[]{"outlook.com", 500L}));
+        when(blocklistRepository.countByDomainAndIsListedTrue("gooddomain.com")).thenReturn(0L);
+        when(blocklistRepository.findByDomainAndIsListedTrue("gooddomain.com")).thenReturn(Collections.emptyList());
 
         DeliverabilityRecordRequest request = new DeliverabilityRecordRequest();
         request.setSenderEmail("sender@gooddomain.com");
@@ -341,9 +342,9 @@ class DeliverabilityServiceTest {
                 new Object[]{"DELIVERED", 9900L}, new Object[]{"BOUNCED", 25L}));
         when(recordRepository.bounceBreakdownByDomain("gooddomain.com")).thenReturn(List.of(
                 new Object[]{"HARD", 5L}, new Object[]{"SOFT", 20L}));
-        when(recordRepository.countByRecipientDomain("gooddomain.com")).thenReturn(List.of(
+        when(recordRepository.countByRecipientDomain("gooddomain.com")).thenReturn(List.<Object[]>of(
                 new Object[]{"gmail.com", 5000L}));
-        when(recordRepository.smtpCodeDistribution("gooddomain.com")).thenReturn(List.of(
+        when(recordRepository.smtpCodeDistribution("gooddomain.com")).thenReturn(List.<Object[]>of(
                 new Object[]{250, 9900L}));
         when(blocklistRepository.findByDomain("gooddomain.com")).thenReturn(Collections.emptyList());
         when(blocklistRepository.countByDomainAndIsListedTrue("gooddomain.com")).thenReturn(0L);
