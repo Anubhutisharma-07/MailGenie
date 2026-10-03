@@ -373,7 +373,7 @@ public class AnalyticsService {
         emailEventRepository.findByUserIdAndEventType(score.getUserId(), "CLICKED").stream()
             .filter(e -> email.equals(e.getRecipientEmail()))
             .max(Comparator.comparing(EmailEvent::getEventTimestamp))
-            .ifPresent(score::setLastClickAt);
+            .ifPresent(e -> score.setLastClickAt(e.getEventTimestamp()));
 
         emailEventRepository.findByUserIdAndEventType(score.getUserId(), "SENT").stream()
             .filter(e -> email.equals(e.getRecipientEmail()))

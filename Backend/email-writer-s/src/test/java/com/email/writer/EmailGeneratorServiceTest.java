@@ -20,7 +20,7 @@ class EmailGeneratorServiceTest {
 
     @BeforeEach
     void setUp() {
-        emailGeneratorService = new EmailGeneratorService(WebClient.builder());
+        emailGeneratorService = new EmailGeneratorService(WebClient.builder(), null, null);
     }
 
     @Test

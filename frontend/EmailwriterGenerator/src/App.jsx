@@ -14,6 +14,7 @@ import EnterpriseTelemetryDashboard from './components/EnterpriseTelemetryDashbo
 import ABTestingAnalytics from './components/ABTestingAnalytics';
 import ContextAwareTemplateList from './components/ContextAwareTemplateList';
 import SubscriberIntelligenceHub from './components/SubscriberIntelligenceHub';
+import DeliverabilityMonitor from './components/DeliverabilityMonitor';
 import WorkflowAutomationBuilder from './components/WorkflowAutomationBuilder';
 import EmailQualityAnalyzerDashboard from './components/EmailQualityAnalyzerDashboard';
 
@@ -454,6 +455,7 @@ function App() {
     { id: 'quotas', label: '🎛️ Quota Policies', icon: '🎛️' },
     { id: 'context_templates', label: '🧠 Context Templates', icon: '🧠' },
     { id: 'subscriber_hub', label: '📊 Subscriber Hub', icon: '📊' },
+    { id: 'deliverability', label: '📧 Deliverability', icon: '📬' },
     { id: 'workflow_automation', label: '⚡ Workflows', icon: '⚡' },
     { id: 'ab_testing', label: '🧪 A/B Testing', icon: '🧪' },
     { id: 'analytics', label: '📊 Usage Analytics', icon: '📈' },
@@ -1405,6 +1407,10 @@ Custom Directives: ${studioCustomInstruction || 'None'}
 
             {activeTab === 'subscriber_hub' && (
               <SubscriberIntelligenceHub />
+            )}
+
+            {activeTab === 'deliverability' && (
+              <DeliverabilityMonitor />
             )}
 
             {activeTab === 'workflow_automation' && (
